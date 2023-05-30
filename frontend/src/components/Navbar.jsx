@@ -82,7 +82,7 @@ const Navbar = () => {
         </Button>
       </HStack>
 
-      {currentUser?.staff && (
+{currentUser?.staff && (
         <HStack direction="row" spacing={4} justifyContent="flex-end">
           <HStack
             borderRadius="full"
@@ -91,17 +91,20 @@ const Navbar = () => {
             boxShadow="xl"
           >
             <Menu>
-              <MenuButton ref={menuButton} size="sm" cursor="pointer">
-                <HiOutlineCog />
-              </MenuButton>
-              <MenuList mt={2}>
-                <MenuGroup>
-                  <MenuItem color="black" as={Link} to="/skill-types">
-                    Skill Types
-                  </MenuItem>
-                </MenuGroup>
-              </MenuList>
-            </Menu>
+            <MenuButton ref={menuButton} size="sm" cursor="pointer">
+              <HiOutlineCog />
+            </MenuButton>
+            <MenuList mt={2}>
+              <MenuGroup>
+                <MenuItem color="black" as={Link} to="/skill-types">
+                  Skill Types
+                </MenuItem>
+                <MenuItem color="black" as={Link} to="/scenario-config">
+                  Scenario Configurations
+                </MenuItem>
+              </MenuGroup>
+            </MenuList>
+          </Menu>
           </HStack>
         </HStack>
       )}
