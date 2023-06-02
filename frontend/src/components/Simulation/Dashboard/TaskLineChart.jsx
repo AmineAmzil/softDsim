@@ -109,8 +109,9 @@ const TaskLineChart = ({title, data}) => {
             setTasksBugBefore(tasksBug)
             setTasksBug(data.tasks.tasks_bug)
 
-            setTasksDoneBefore(tasksDoneBefore)
-            setTasksDone(data.tasks.tasks_done)
+            setTasksDoneBefore(tasksDone) // Setze den aktuellen Wert von tasksDone als vorherigen Wert
+            setTasksDone(data.tasks.tasks_done) // Setze den aktuellen Wert von tasksDone auf den neuen Wert aus data
+
         }
     }, [data])
 
