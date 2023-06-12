@@ -564,6 +564,17 @@ const Simulation = () => {
                                             <GridItem colSpan={1}>
                                                 {/* end simulation button */}
                                                 {
+													((!(currentType === 'RESULT')&&((tasksMax - (simValues.tasks.tasks_bug +
+                                                            simValues.tasks.tasks_done +
+                                                            simValues.tasks.tasks_integration_tested +
+                                                            simValues.tasks.tasks_unit_tested)) == 0))) ? (
+														<Button onClick={() => { manualEndSimulation() }}
+															colorScheme='blue' size='lg' mt={3} mr={5} w="35%" isLoading={nextIsLoading}>
+															<Tooltip label={'Fin'} aria-label='A tooltip' placement="top">
+																Finish
+															</Tooltip>
+														</Button>
+													) :
                                                     (!(currentType === 'RESULT') && (tasksMax > 0) && (
                                                         (
                                                             simValues.tasks.tasks_bug +
@@ -579,6 +590,8 @@ const Simulation = () => {
                                                         </Button>
                                                         : <></>
                                                 }
+												
+												
                                                 {/* Finish and Next buttons */}
                                                 {
                                                     currentType === 'RESULT' ?
