@@ -1,4 +1,5 @@
 import { Flex, FormControl, Grid, Switch } from '@chakra-ui/react'
+import React, { useState } from 'react'
 import ActionSlider from './ActionSlider'
 import ActionToggle from './ActionToggle'
 import ActionSelect from './ActionSelect'
@@ -6,13 +7,19 @@ import { actionIcon } from "../../ScenarionStudio/scenarioStudioData"
 import ActionElement from "./ActionElement";
 
 const Action = (props) => {
+ const [activeTooltip, setActiveTooltip] = useState(null);
+
+  const handleButtonClick = (tooltip) => {
+    setActiveTooltip(tooltip);
+  };
     if (Object.keys(props).length > 0) {
         return (
             <Grid borderRadius="xl">
                 {
                     // Bugfix
                     props.action.action === 'bugfix' ?
-                        <ActionElement title="Bugfixing" secondaryText="Start Bugfixing" icon={actionIcon.BUGFIX} tooltip={"Fix known bugs. Bugs are discovered after unit testing"}>
+                        <ActionElement title="Bugfixing" secondaryText="Start Bugfixing" icon={actionIcon.BUGFIX}  tooltip={"Fix known bugs. Bugs are discovered after unit testing"}>
+                         <button onClick={() => handleButtonClick('bugfix')}>?</button>
                             <FormControl display="flex" justifyContent="end">
                                 <Switch onChange={(event) => props.onSelectAction({
                                     type: props.action.action,
@@ -25,6 +32,7 @@ const Action = (props) => {
                         props.action.action === 'unittest' ?
                             <ActionElement title="Unit Testing" secondaryText="Start Unit Testing"
                                 icon={actionIcon.UNITTEST} tooltip={"Test specific parts for functionality and/or bugs"}>
+                                <button onClick={() => handleButtonClick('unittest')}>?</button>
                                 <FormControl display="flex" justifyContent="end">
                                     <Switch onChange={(event) => props.onSelectAction({
                                         type: props.action.action,
@@ -37,6 +45,7 @@ const Action = (props) => {
                             props.action.action === 'integrationtest' ?
                                 <ActionElement title="Integration Testing" secondaryText="Start Integration Testing"
                                     icon={actionIcon.INTEGRATIONTEST} tooltip={"Integration testing should be done after unit testing and bug fixing"}>
+                                    <button onClick={() => handleButtonClick('integrationtest')}>?</button>
                                     <ActionToggle onEventbutton={(event) => props.onSelectAction({
                                         type: props.action.action,
                                         value: event
