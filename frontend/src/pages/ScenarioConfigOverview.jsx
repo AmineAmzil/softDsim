@@ -14,6 +14,7 @@ import {
   VStack,
   Td,
   Spinner,
+  FormHelperText,
   Button,
   Container,
   useToast,
@@ -32,62 +33,73 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  FormHelperText,
   AlertDialogOverlay,
+  Select,
 } from "@chakra-ui/react";
 import { HiOutlineTrash } from "react-icons/hi";
 import { FormControl, FormLabel, Input } from "@chakra-ui/react";
 
-const SkilltypesOverview = () => {
-  const [skilltypes, setSkilltypes] = useState([]);
+const ScenarioConfigOverview = () => {
+  const [scenarioConfigs, setScenarioConfigs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedSkilltype, setSelectedSkilltype] = useState({});
+  const [selectedScenarioConfig, setSelectedScenarioConfig] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [updatedScenarioConfig, setUpdatedScenarioConfig] = useState([]);
 
   const [isModal2Open, setIsModal2Open] = useState(false);
+
+  window.value = 10;
 
   const closeModal2 = () => {
     setIsModal2Open(false);
   };
 
-  window.value = 10;
-
-  const [skillTypeForm, setSkillTypeForm] = useState({
+  const [scenarioConfigForm, setScenarioConfigForm] = useState({
     name: "",
-    costPerDay: 0,
-    errorRate: 0,
-    throughput: 0,
-    managementQuality: 0,
-    developmentQuality: 0,
-    signingBonus: 0,
+    stressWeekendReduction: 0,
+    stressOvertimeIncrease: 0,
+    stressErrorIncrease: 0,
+    doneTasksPerMeeting: 0,
+    trainSkillIncreaseRate: 0,
+    costMemberTeamEvent: 0,
+    randomness: 0,
   });
 
   const cancelRef = useRef();
   const toast = useToast();
 
-  const fetchSkillTypes = async () => {
+  const checkScenarioConfigNameExists = (name, id) => {
+    return scenarioConfigs.some(
+      (config) =>
+        config.name &&
+        config.name.toLowerCase() === name.toLowerCase() &&
+        config.id !== id
+    );
+  };
+
+  const fetchScenarioConfigs = async () => {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_DJANGO_HOST}/api/skill-type`,
+        `${process.env.REACT_APP_DJANGO_HOST}/api/scenario-config`,
         {
           method: "GET",
           credentials: "include",
         }
       );
-      const skilltypesData = await res.json();
-      setSkilltypes(skilltypesData.data);
+      const scenarioConfigsData = await res.json();
+      setScenarioConfigs(scenarioConfigsData.data);
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
     }
   };
 
-  const deleteSkillType = async (skillType) => {
+  const deleteScenarioConfig = async (scenarioConfig) => {
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_DJANGO_HOST}/api/skill-type/${skillType.id}`,
+        `${process.env.REACT_APP_DJANGO_HOST}/api/scenario-config/${scenarioConfig.id}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -96,21 +108,16 @@ const SkilltypesOverview = () => {
           },
         }
       );
-
-      if (res.ok) {
-        await res.json();
-        await fetchSkillTypes();
-        toast({
-          title: `${skillType.name} has been deleted`,
-          status: "success",
-          duration: 5000,
-        });
-      } else {
-        throw new Error("Deletion failed");
-      }
+      await res.json();
+      await fetchScenarioConfigs();
+      toast({
+        title: `${scenarioConfig.name} has been deleted`,
+        status: "success",
+        duration: 5000,
+      });
     } catch (e) {
       toast({
-        title: `Could not delete ${skillType.name}`,
+        title: `Could not delete ${scenarioConfig.name}`,
         status: "error",
         duration: 5000,
       });
@@ -124,55 +131,46 @@ const SkilltypesOverview = () => {
     return cookieValue ? cookieValue.pop() : "";
   };
 
-  const checkSkillTypeNameExists = (name, id) => {
-    return skilltypes.some(
-      (skill) =>
-        skill.name &&
-        skill.name.toLowerCase() === name.toLowerCase() &&
-        skill.id !== id
-    );
-  };
-
-  const handleCreateSkillType = async (e) => {
+  const handleCreateScenarioConfig = async (e) => {
     e.preventDefault();
 
     const {
       name,
-      costPerDay,
-      errorRate,
-      throughput,
-      managementQuality,
-      developmentQuality,
-      signingBonus,
-    } = skillTypeForm;
+      stressWeekendReduction,
+      stressOvertimeIncrease,
+      stressErrorIncrease,
+      doneTasksPerMeeting,
+      trainSkillIncreaseRate,
+      costMemberTeamEvent,
+      randomness,
+    } = scenarioConfigForm;
 
-    const newSkillType = {
+    const newScenarioConfig = {
       name,
-      cost_per_day: costPerDay,
-      error_rate: errorRate,
-      throughput,
-      management_quality: managementQuality,
-      development_quality: developmentQuality,
-      signing_bonus: signingBonus,
+      stress_weekend_reduction: stressWeekendReduction,
+      stress_overtime_increase: stressOvertimeIncrease,
+      stress_error_increase: stressErrorIncrease,
+      done_tasks_per_meeting: doneTasksPerMeeting,
+      train_skill_increase_rate: trainSkillIncreaseRate,
+      cost_member_team_event: costMemberTeamEvent,
+      randomness,
     };
 
     try {
-      // Check if the skill type name already exists
-      const nameExists = checkSkillTypeNameExists(name);
+      const nameExists = checkScenarioConfigNameExists(name);
 
       if (nameExists) {
         toast({
-          title: "Failed to create skill type",
+          title: "Failed to create Scenario Configuration",
           description:
-            "Skill type name already exists. Please provide a different name.",
+            "Scenario Configuration name already exists. Please provide a different name.",
           status: "warning",
           duration: 5000,
         });
         return;
       } else {
-        // Create the skill type if the name is unique
-        const createRes = await fetch(
-          `${process.env.REACT_APP_DJANGO_HOST}/api/skill-type`,
+        const res = await fetch(
+          `${process.env.REACT_APP_DJANGO_HOST}/api/scenario-config`,
           {
             method: "POST",
             credentials: "include",
@@ -180,36 +178,34 @@ const SkilltypesOverview = () => {
               "Content-Type": "application/json",
               "X-CSRFToken": getCookie("csrftoken"),
             },
-            body: JSON.stringify(newSkillType),
+            body: JSON.stringify(newScenarioConfig),
           }
         );
 
-        if (createRes.ok) {
+        if (res.ok) {
           toast({
-            title: `${newSkillType.name} has been created`,
+            title: `${newScenarioConfig.name} has been created`,
             status: "success",
             duration: 5000,
           });
 
-          // Clear the form inputs
-          setSkillTypeForm({
+          setScenarioConfigForm({
             name: "",
-            costPerDay: 0,
-            errorRate: 0,
-            throughput: 0,
-            managementQuality: 0,
-            developmentQuality: 0,
-            signingBonus: 0,
+            stressWeekendReduction: "-",
+            stressOvertimeIncrease: 0,
+            stressErrorIncrease: 0,
+            doneTasksPerMeeting: 0,
+            trainSkillIncreaseRate: 0,
+            costMemberTeamEvent: 0,
+            randomness: 0,
           });
 
-          // Fetch updated skill types
-          fetchSkillTypes();
+          fetchScenarioConfigs();
 
-          // Close the modal
           setIsModalOpen(false);
         } else {
           toast({
-            title: "Failed to create skill type",
+            title: "Failed to create scenario configuration",
             status: "error",
             duration: 5000,
           });
@@ -225,33 +221,30 @@ const SkilltypesOverview = () => {
   };
 
   useEffect(() => {
-    fetchSkillTypes();
+    fetchScenarioConfigs();
   }, []);
-
-  const handleOpenDeleteDialog = (skillType) => {
-    setSelectedSkilltype(skillType);
-    setIsDeleteOpen(true);
-  };
 
   const handleCloseDeleteDialog = () => {
     setIsDeleteOpen(false);
   };
 
   const handleConfirmDelete = () => {
-    deleteSkillType(selectedSkilltype);
+    deleteScenarioConfig(selectedScenarioConfig);
     setIsDeleteOpen(false);
   };
 
   const handleOpenModal = () => {
-    setSkillTypeForm({
+    setScenarioConfigForm({
       name: "",
-      costPerDay: 0,
-      errorRate: 0,
-      throughput: 0,
-      managementQuality: 0,
-      developmentQuality: 0,
-      signingBonus: 0,
+      stressWeekendReduction: "-",
+      stressOvertimeIncrease: 0,
+      stressErrorIncrease: 0,
+      doneTasksPerMeeting: 0,
+      trainSkillIncreaseRate: 0,
+      costMemberTeamEvent: 0,
+      randomness: 0,
     });
+
     setIsModalOpen(true);
   };
 
@@ -259,29 +252,28 @@ const SkilltypesOverview = () => {
     setIsModalOpen(false);
   };
 
-  const handleEditSkillType = (skillType) => {
-    setSkillTypeForm(skillType);
+  const handleEditScenarioConfig = (scenarioConfig) => {
+    setScenarioConfigForm(scenarioConfig);
     setIsModal2Open(true);
   };
 
-  const handleUpdateSkillType = async (e) => {
+  const handleUpdateScenarioConfig = async (e) => {
     e.preventDefault();
 
     try {
-      const { id, name } = skillTypeForm;
+      const { id, name } = scenarioConfigForm;
 
-      // Check if the name already exists
-      const nameExists = checkSkillTypeNameExists(name, id);
+      const nameExists = checkScenarioConfigNameExists(name, id);
 
       if (nameExists) {
         toast({
-          title: `Skill Type with the name "${name}" already exists`,
+          title: `Scenario configuration with the name "${name}" already exists`,
           status: "warning",
           duration: 5000,
         });
       } else {
         const res = await fetch(
-          `${process.env.REACT_APP_DJANGO_HOST}/api/skill-type/${id}`,
+          `${process.env.REACT_APP_DJANGO_HOST}/api/scenario-config/${id}`,
           {
             method: "PATCH",
             credentials: "include",
@@ -289,31 +281,33 @@ const SkilltypesOverview = () => {
               "Content-Type": "application/json",
               "X-CSRFToken": getCookie("csrftoken"),
             },
-            body: JSON.stringify(skillTypeForm),
+            body: JSON.stringify(scenarioConfigForm),
           }
         );
 
         if (res.ok) {
-          const updatedSkillType = await res.json();
-          // Update the skill type if the name doesn't exist
-          const updatedSkillTypes = skilltypes.map((skill) =>
-            skill.id === updatedSkillType.id ? updatedSkillType : skill
+          const updatedScenarioConfig = await res.json();
+
+          const updatedScenarioConfigs = scenarioConfigs.map((config) =>
+            config.id === updatedScenarioConfig.id
+              ? updatedScenarioConfig
+              : config
           );
-          setSkilltypes(updatedSkillTypes);
-          fetchSkillTypes();
+          setScenarioConfigs(updatedScenarioConfigs);
+          fetchScenarioConfigs();
           setIsModal2Open(false);
           toast({
-            title: `Skill Type has been updated`,
+            title: `Scenario configuration has been updated`,
             status: "success",
             duration: 5000,
           });
         } else {
-          throw new Error("Failed to update skill type");
+          throw new Error("Failed to update scenario configuration");
         }
       }
     } catch (error) {
       toast({
-        title: `Could not update ${skillTypeForm.name}`,
+        title: `Could not update ${scenarioConfigForm.name}`,
         status: "error",
         duration: 5000,
       });
@@ -321,7 +315,7 @@ const SkilltypesOverview = () => {
   };
 
   const handleInputChange = (e) => {
-    setSkillTypeForm((prevForm) => ({
+    setScenarioConfigForm((prevForm) => ({
       ...prevForm,
       [e.target.name]: e.target.value,
     }));
@@ -335,16 +329,18 @@ const SkilltypesOverview = () => {
             <BreadcrumbLink href="/">Home</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink href="#">Skill Types</BreadcrumbLink>
+            <BreadcrumbLink href="#">Scenario Configurations</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
-        <Button colorScheme="blue" onClick={handleOpenModal}>
-          Create new
-        </Button>
+        {scenarioConfigs.length === 0 && (
+          <Button onClick={handleOpenModal} colorScheme="blue">
+            Create New
+          </Button>
+        )}
       </Flex>
       <Box p={4} bg="white" boxShadow="base" rounded="md">
         <Heading size="lg" mb={4}>
-          Skill Types
+          Scenario Configuration
         </Heading>
         {isLoading ? (
           <Spinner />
@@ -353,25 +349,27 @@ const SkilltypesOverview = () => {
             <Thead>
               <Tr>
                 <Th>Name</Th>
-                <Th>Cost per Day</Th>
-                <Th>Error Rate</Th>
-                <Th>Throughput</Th>
-                <Th>Management Quality</Th>
-                <Th>Development Quality</Th>
-                <Th>Signing Bonus</Th>
+                <Th>Stress Weekend Reduction</Th>
+                <Th>Stress Overtime Increase</Th>
+                <Th>Stress Error Increase</Th>
+                <Th>Done Tasks Per Meeting</Th>
+                <Th>Train Skill Increase Rate</Th>
+                <Th>cost Member Team Event</Th>
+                <Th>randomness</Th>
                 <Th></Th>
               </Tr>
             </Thead>
             <Tbody>
-              {skilltypes.map((skillType) => (
-                <Tr key={skillType.id}>
-                  <Td>{skillType.name}</Td>
-                  <Td>{skillType.cost_per_day}</Td>
-                  <Td>{skillType.error_rate}</Td>
-                  <Td>{skillType.throughput}</Td>
-                  <Td>{skillType.management_quality}</Td>
-                  <Td>{skillType.development_quality}</Td>
-                  <Td>{skillType.signing_bonus}</Td>
+              {scenarioConfigs.map((scenarioConfig) => (
+                <Tr key={scenarioConfig.id}>
+                  <Td>{scenarioConfig.name}</Td>
+                  <Td>{scenarioConfig.stress_weekend_reduction}</Td>
+                  <Td>{scenarioConfig.stress_overtime_increase}</Td>
+                  <Td>{scenarioConfig.stress_error_increase}</Td>
+                  <Td>{scenarioConfig.done_tasks_per_meeting}</Td>
+                  <Td>{scenarioConfig.train_skill_increase_rate}</Td>
+                  <Td>{scenarioConfig.cost_member_team_event}</Td>
+                  <Td>{scenarioConfig.randomness}</Td>
                   <Td>
                     <Popover>
                       <PopoverTrigger>
@@ -379,20 +377,14 @@ const SkilltypesOverview = () => {
                           <Button
                             size="sm"
                             colorScheme="blue"
-                            onClick={() => handleEditSkillType(skillType)}
+                            onClick={() =>
+                              handleEditScenarioConfig(scenarioConfig)
+                            }
                           >
                             Edit
                           </Button>
-                          <Button
-                            size="sm"
-                            colorScheme="red"
-                            onClick={() => handleOpenDeleteDialog(skillType)}
-                          >
-                            <HiOutlineTrash />
-                          </Button>
                         </ButtonGroup>
                       </PopoverTrigger>
-                      {/* ... */}
                     </Popover>
                   </Td>
                 </Tr>
@@ -411,11 +403,12 @@ const SkilltypesOverview = () => {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Delete Skill Type
+              Delete Scenario configuration Type
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              Are you sure you want to delete <b>{selectedSkilltype.name}</b>?
+              Are you sure you want to delete{" "}
+              <b>{selectedScenarioConfig.name}</b>?
             </AlertDialogBody>
 
             <AlertDialogFooter>
@@ -430,13 +423,12 @@ const SkilltypesOverview = () => {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      {/* Create Skill Type Modal */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>New Skill Type</ModalHeader>
+          <ModalHeader>Create Scenario Configuration</ModalHeader>
           <ModalCloseButton />
-          <form onSubmit={handleCreateSkillType}>
+          <form onSubmit={handleCreateScenarioConfig}>
             <ModalBody>
               <VStack spacing={4}>
                 <FormControl>
@@ -444,47 +436,45 @@ const SkilltypesOverview = () => {
                   <Input
                     type="text"
                     name="name"
-                    value={skillTypeForm.name}
-                    maxLength={255}
+                    value={scenarioConfigForm.name}
                     onChange={handleInputChange}
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Cost Per Day
-                  </FormLabel>
+                  <FormLabel>Stress Weekend Reduction</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a postive number.
+                    Please enter a number between -1 and 1.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="costPerDay"
-                    value={skillTypeForm.costPerDay}
-                    onChange={handleInputChange}
-                    onKeyPress={(event) => {
-                      const keyCode = event.which || event.keyCode;
-                      const keyValue = String.fromCharCode(keyCode);
-                      const newValue = event.target.value + keyValue;
-
-                      if (!/^\d*\.?\d*$/.test(newValue)) {
-                        event.preventDefault();
+                    name="stressWeekendReduction"
+                    defaultValue={scenarioConfigForm.stressWeekendReduction}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      if (
+                        inputValue === "" ||
+                        (/^-?\d*\.?\d*$/.test(inputValue) &&
+                          (inputValue === "-" ||
+                            (inputValue >= -1 && inputValue <= 1)))
+                      ) {
+                        handleInputChange(e);
                       }
                     }}
-                    pattern="[0-9]*[.,]?[0-9]+"
-                    title="Please enter a positive number."
+                    onKeyDown={(e) => {
+                      const inputValue = e.target.value;
+                      const caretPosition = e.target.selectionStart;
+                    }}
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Error Rate
-                  </FormLabel>
+                  <FormLabel>Stress Overtime Increase</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a number between 0 and 1. ( x.xx )
+                    Please enter a number between 0 and 1.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="errorRate"
-                    value={skillTypeForm.errorRate}
+                    name="stressOvertimeIncrease"
+                    value={scenarioConfigForm.stressOvertimeIncrease}
                     onChange={handleInputChange}
                     onKeyPress={(e) => {
                       const charCode = e.which ? e.which : e.keyCode;
@@ -502,16 +492,40 @@ const SkilltypesOverview = () => {
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Throughput
-                  </FormLabel>
+                  <FormLabel>Stress Error Increase</FormLabel>
+                  <FormHelperText style={{ marginTop: "1px" }}>
+                    Please enter a number between 0 and 1.
+                  </FormHelperText>
+                  <Input
+                    type="text"
+                    name="stressErrorIncrease"
+                    value={scenarioConfigForm.stressErrorIncrease}
+                    onChange={handleInputChange}
+                    onKeyPress={(e) => {
+                      const charCode = e.which ? e.which : e.keyCode;
+                      const inputValue =
+                        e.target.value + String.fromCharCode(charCode);
+                      const isValid =
+                        /^\d*\.?\d*$/.test(inputValue) &&
+                        parseFloat(inputValue) >= 0 &&
+                        parseFloat(inputValue) <= 1;
+
+                      if (!isValid) {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Done Tasks Per Meeting</FormLabel>
+                  <FormLabel>Done Tasks Per Meeting</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
                     Please enter a positive number.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="throughput"
-                    value={skillTypeForm.throughput}
+                    name="doneTasksPerMeeting"
+                    value={scenarioConfigForm.doneTasksPerMeeting}
                     onChange={handleInputChange}
                     onKeyPress={(event) => {
                       const keyCode = event.which || event.keyCode;
@@ -522,71 +536,18 @@ const SkilltypesOverview = () => {
                         event.preventDefault();
                       }
                     }}
-                    pattern="[0-9]*[.,]?[0-9]+"
-                    title="Please enter a positive number."
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Management Quality
-                  </FormLabel>
-                  <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a number between 0 and 100.
-                  </FormHelperText>
-                  <Input
-                    type="text"
-                    name="managementQuality"
-                    value={skillTypeForm.managementQuality}
-                    onChange={handleInputChange}
-                    onKeyPress={(event) => {
-                      const keyCode = event.which || event.keyCode;
-                      const keyValue = String.fromCharCode(keyCode);
-                      const newValue = event.target.value + keyValue;
-
-                      if (isNaN(newValue) || parseFloat(newValue) > 100) {
-                        event.preventDefault();
-                      }
-                    }}
-                    pattern="^(?:\d{1,2}(?:\.\d*)?|100(\.0*)?)$"
-                    title="Please enter a number between 0 and 100"
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Development Quality
-                  </FormLabel>
-                  <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a number between 0 and 100.
-                  </FormHelperText>
-                  <Input
-                    type="text"
-                    name="developmentQuality"
-                    value={skillTypeForm.developmentQuality}
-                    onChange={handleInputChange}
-                    onKeyPress={(event) => {
-                      const keyCode = event.which || event.keyCode;
-                      const keyValue = String.fromCharCode(keyCode);
-                      const newValue = event.target.value + keyValue;
-
-                      if (isNaN(newValue) || parseFloat(newValue) > 100) {
-                        event.preventDefault();
-                      }
-                    }}
-                    pattern="^(?:\d{1,2}(?:\.\d*)?|100(\.0*)?)$"
-                    title="Please enter a number between 0 and 100"
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Signing Bonus
-                  </FormLabel>
+                  <FormLabel>Train Skill Increase Rate</FormLabel>
+                  <FormLabel>Done Tasks Per Meeting</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
                     Please enter a positive number.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="signingBonus"
-                    value={skillTypeForm.signingBonus}
+                    name="trainSkillIncreaseRate"
+                    value={scenarioConfigForm.trainSkillIncreaseRate}
                     onChange={handleInputChange}
                     onKeyPress={(event) => {
                       const keyCode = event.which || event.keyCode;
@@ -597,9 +558,46 @@ const SkilltypesOverview = () => {
                         event.preventDefault();
                       }
                     }}
-                    pattern="[0-9]*[.,]?[0-9]+"
-                    title="Please enter a positive number."
                   />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Cost Member Team Event</FormLabel>
+                  <FormLabel>Done Tasks Per Meeting</FormLabel>
+                  <FormHelperText style={{ marginTop: "1px" }}>
+                    Please enter a positive number.
+                  </FormHelperText>
+                  <Input
+                    type="text"
+                    name="costMemberTeamEvent"
+                    value={scenarioConfigForm.costMemberTeamEvent}
+                    onChange={handleInputChange}
+                    onKeyPress={(event) => {
+                      const keyCode = event.which || event.keyCode;
+                      const keyValue = String.fromCharCode(keyCode);
+                      const newValue = event.target.value + keyValue;
+
+                      if (!/^\d*\.?\d*$/.test(newValue)) {
+                        event.preventDefault();
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Randomness</FormLabel>
+                  <Select
+                    name="randomness"
+                    value={updatedScenarioConfig.randomness}
+                    onChange={handleInputChange}
+                    placeholder="Select"
+                    required
+                  >
+                    <option value="" disabled hidden>
+                      Select
+                    </option>
+                    <option value="full">Full</option>
+                    <option value="semi">Semi</option>
+                    <option value="none">None</option>
+                  </Select>
                 </FormControl>
               </VStack>
             </ModalBody>
@@ -616,9 +614,9 @@ const SkilltypesOverview = () => {
       <Modal isOpen={isModal2Open} onClose={closeModal2}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Update Skill Type</ModalHeader>
+          <ModalHeader>Update Scenario Configuration</ModalHeader>
           <ModalCloseButton />
-          <form onSubmit={handleUpdateSkillType}>
+          <form onSubmit={handleUpdateScenarioConfig}>
             <ModalBody>
               <VStack spacing={4}>
                 <FormControl>
@@ -626,47 +624,45 @@ const SkilltypesOverview = () => {
                   <Input
                     type="text"
                     name="name"
-                    value={skillTypeForm.name}
-                    maxLength={255}
+                    value={scenarioConfigForm.name}
                     onChange={handleInputChange}
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Cost Per Day
-                  </FormLabel>
+                  <FormLabel>Stress Weekend Reduction</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a positive number.
+                    Please enter a number between -1 and 1.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="cost_per_day"
-                    value={skillTypeForm.cost_per_day}
-                    onChange={handleInputChange}
-                    onKeyPress={(event) => {
-                      const keyCode = event.which || event.keyCode;
-                      const keyValue = String.fromCharCode(keyCode);
-                      const newValue = event.target.value + keyValue;
-
-                      if (!/^\d*\.?\d*$/.test(newValue)) {
-                        event.preventDefault();
+                    name="stress_weekend_reduction"
+                    value={scenarioConfigForm.stress_weekend_reduction}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      if (
+                        inputValue === "" ||
+                        (/^-?\d*\.?\d*$/.test(inputValue) &&
+                          (inputValue === "-" ||
+                            (inputValue >= -1 && inputValue <= 1)))
+                      ) {
+                        handleInputChange(e);
                       }
                     }}
-                    pattern="[0-9]*[.,]?[0-9]+"
-                    title="Please enter a positive number."
+                    onKeyDown={(e) => {
+                      const inputValue = e.target.value;
+                      const caretPosition = e.target.selectionStart;
+                    }}
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Error Rate
-                  </FormLabel>
+                  <FormLabel>Stress Overtime Increase</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a number between 0 and 1. ( x.xx )
+                    Please enter a number between 0 and 1.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="error_rate"
-                    value={skillTypeForm.error_rate}
+                    name="stress_overtime_increase"
+                    value={scenarioConfigForm.stress_overtime_increase}
                     onChange={handleInputChange}
                     onKeyPress={(e) => {
                       const charCode = e.which ? e.which : e.keyCode;
@@ -681,21 +677,42 @@ const SkilltypesOverview = () => {
                         e.preventDefault();
                       }
                     }}
-                    pattern="^(?:0(\.\d+)?|1(\.0*)?)$"
-                    title="Please enter a number between 0 and 1"
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Throughput
-                  </FormLabel>
+                  <FormLabel>Stress Error Increase</FormLabel>
+                  <FormHelperText style={{ marginTop: "1px" }}>
+                    Please enter a number between 0 and 1.
+                  </FormHelperText>
+                  <Input
+                    type="text"
+                    name="stress_error_increase"
+                    value={scenarioConfigForm.stress_error_increase}
+                    onChange={handleInputChange}
+                    onKeyPress={(e) => {
+                      const charCode = e.which ? e.which : e.keyCode;
+                      const inputValue =
+                        e.target.value + String.fromCharCode(charCode);
+                      const isValid =
+                        /^\d*\.?\d*$/.test(inputValue) &&
+                        parseFloat(inputValue) >= 0 &&
+                        parseFloat(inputValue) <= 1;
+
+                      if (!isValid) {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Done Tasks Per Meeting</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
                     Please enter a positive number.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="throughput"
-                    value={skillTypeForm.throughput}
+                    name="done_tasks_per_meeting"
+                    value={scenarioConfigForm.done_tasks_per_meeting}
                     onChange={handleInputChange}
                     onKeyPress={(event) => {
                       const keyCode = event.which || event.keyCode;
@@ -706,71 +723,17 @@ const SkilltypesOverview = () => {
                         event.preventDefault();
                       }
                     }}
-                    pattern="[0-9]*[.,]?[0-9]+"
-                    title="Please enter a positive number."
                   />
                 </FormControl>
                 <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Management Quality
-                  </FormLabel>
-                  <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a number between 0 and 100.
-                  </FormHelperText>
-                  <Input
-                    type="text"
-                    name="management_quality"
-                    value={skillTypeForm.management_quality}
-                    onChange={handleInputChange}
-                    onKeyPress={(event) => {
-                      const keyCode = event.which || event.keyCode;
-                      const keyValue = String.fromCharCode(keyCode);
-                      const newValue = event.target.value + keyValue;
-
-                      if (isNaN(newValue) || parseFloat(newValue) > 100) {
-                        event.preventDefault();
-                      }
-                    }}
-                    pattern="^(?:\d{1,2}(?:\.\d*)?|100(\.0*)?)$"
-                    title="Please enter a number between 0 and 100"
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Development Quality
-                  </FormLabel>
-                  <FormHelperText style={{ marginTop: "1px" }}>
-                    Please enter a number between 0 and 100.
-                  </FormHelperText>
-                  <Input
-                    type="text"
-                    name="development_quality"
-                    value={skillTypeForm.development_quality}
-                    onChange={handleInputChange}
-                    onKeyPress={(event) => {
-                      const keyCode = event.which || event.keyCode;
-                      const keyValue = String.fromCharCode(keyCode);
-                      const newValue = event.target.value + keyValue;
-
-                      if (isNaN(newValue) || parseFloat(newValue) > 100) {
-                        event.preventDefault();
-                      }
-                    }}
-                    pattern="^(?:\d{1,2}(?:\.\d*)?|100(\.0*)?)$"
-                    title="Please enter a number between 0 and 100"
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel style={{ marginBottom: "1px" }}>
-                    Signing Bonus
-                  </FormLabel>
+                  <FormLabel>Train Skill Increase Rate</FormLabel>
                   <FormHelperText style={{ marginTop: "1px" }}>
                     Please enter a positive number.
                   </FormHelperText>
                   <Input
                     type="text"
-                    name="signing_bonus"
-                    value={skillTypeForm.signing_bonus}
+                    name="train_skill_increase_rate"
+                    value={scenarioConfigForm.train_skill_increase_rate}
                     onChange={handleInputChange}
                     onKeyPress={(event) => {
                       const keyCode = event.which || event.keyCode;
@@ -781,9 +744,45 @@ const SkilltypesOverview = () => {
                         event.preventDefault();
                       }
                     }}
-                    pattern="[0-9]*[.,]?[0-9]+"
-                    title="Please enter a positive number."
                   />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Cost Member Team Event</FormLabel>
+                  <FormHelperText style={{ marginTop: "1px" }}>
+                    Please enter a positive number.
+                  </FormHelperText>
+                  <Input
+                    type="text"
+                    name="cost_member_team_event"
+                    value={scenarioConfigForm.cost_member_team_event}
+                    onChange={handleInputChange}
+                    onKeyPress={(event) => {
+                      const keyCode = event.which || event.keyCode;
+                      const keyValue = String.fromCharCode(keyCode);
+                      const newValue = event.target.value + keyValue;
+
+                      if (!/^\d*\.?\d*$/.test(newValue)) {
+                        event.preventDefault();
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Randomness</FormLabel>
+                  <Select
+                    name="randomness"
+                    value={scenarioConfigForm.randomness}
+                    onChange={handleInputChange}
+                    placeholder="Select"
+                    required
+                  >
+                    <option value="" disabled hidden>
+                      Select
+                    </option>
+                    <option value="full">Full</option>
+                    <option value="semi">Semi</option>
+                    <option value="none">None</option>
+                  </Select>
                 </FormControl>
               </VStack>
             </ModalBody>
@@ -800,4 +799,4 @@ const SkilltypesOverview = () => {
   );
 };
 
-export default SkilltypesOverview;
+export default ScenarioConfigOverview;

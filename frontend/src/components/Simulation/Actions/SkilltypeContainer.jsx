@@ -97,14 +97,13 @@ const SkilltypeContainer = ({
                       <br />
                       <strong>Error rate:</strong> {skillTypeObj.error_rate}
                       <br />
+                      <strong>Throughput:</strong> {skillTypeObj.throughput}
+                      <br />
                       <strong>Management quality:</strong>{" "}
                       {skillTypeObj.management_quality}
                       <br />
                       <strong>Development quality:</strong>{" "}
                       {skillTypeObj.development_quality}
-                      <br />
-                      <strong>Signing bonus:</strong>{" "}
-                      ${skillTypeObj.signing_bonus}
                     </div>
                   }
                 >
