@@ -1,11 +1,38 @@
 [
   {
-    "name": "backend_developer_senior",
+    "name": "junior_consultant",
+    "cost_per_day": 182.69,
+    "error_rate": 0.06,
+    "throughput": 2,
+    "management_quality": 70,
+    "development_quality": 10,
+    "signing_bonus": 13000
+  },
+  {
+    "name": "senior_consultant",
+    "cost_per_day": 230.77,
     "error_rate": 0.03,
+    "throughput": 4,
+    "management_quality": 40,
+    "development_quality": 20,
+    "signing_bonus": 13000
+  },
+  {
+    "name": "technical_specialist",
+    "cost_per_day": 165.38,
+    "error_rate": 0.02,
     "throughput": 3,
-    "cost_per_day": 250,
     "management_quality": 10,
-    "development_quality": 70,
+    "development_quality": 50,
+    "signing_bonus": 13000
+  },
+  {
+    "name": "frontend_developer_junior",
+    "cost_per_day": 184.6,
+    "error_rate": 0.05,
+    "throughput": 2,
+    "management_quality": 10,
+    "development_quality": 20,
     "signing_bonus": 13000
   }
 ]

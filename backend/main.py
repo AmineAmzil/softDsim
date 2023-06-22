@@ -27,8 +27,8 @@ def check_file_exists(file_path):
 
 
 def validate_env_file(file_path):
-    required_attributes = ["bucket", "USE_S3",
-                           "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM"]
+    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME",
+                           "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM", "SKILL_TYPE_ID"]
     load_dotenv(file_path)
     missing_attributes = [
         attr for attr in required_attributes if os.getenv(attr) is None]
@@ -36,9 +36,13 @@ def validate_env_file(file_path):
         raise ValueError(
             f"Missing attributes in the .env file: {', '.join(missing_attributes)}")
 
-    if os.getenv("NUMBER_OF_SK_PER_TEAM") < 1 or os.getenv("NUMBER_OF_SK_PER_TEAM") > 10:
+    if int(os.getenv("NUMBER_OF_SK_PER_TEAM")) < 1 or int(os.getenv("NUMBER_OF_SK_PER_TEAM")) > 10:
         raise ValueError(
-            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the .env file. It soulb be > 0 and <= 10")
+            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the .env file. NUMBER_OF_SK_PER_TEAM soulb be > 0 and <= 10")
+
+    if int(os.getenv("SKILL_TYPE_ID")) < 0:
+        raise ValueError(
+            f"Unvalid value of attribute 'SKILL_TYPE_ID' in the .env file. SKILL_TYPE_ID soulb be > 0.")
 
 
 check_file_exists("testparams.env")
@@ -53,6 +57,7 @@ RUNNAME = os.getenv("RUNNAME")
 NRUNS = int(os.getenv("NRUNS"))
 SAVE_EVERY = int(os.getenv("SAVE_EVERY"))
 NUMBER_OF_SK_PER_TEAM = int(os.getenv("NUMBER_OF_SK_PER_TEAM"))
+SKILL_TYPE_ID = int(os.getenv("SKILL_TYPE_ID"))
 
 Team.objects.create()
 
@@ -110,14 +115,15 @@ def validate_scenario_config_data(data):
                     f"Invalid value for attribute '{attribute}'. It should be between 0 and 100.")
 
 
-def retrieve_skill_types_from_json():
+def retrieve_skill_types_from_json() -> List[SkillType]:
     file_path = "skilltypes.json"
     check_file_exists(file_path)
 
     with open(file_path, 'r') as json_file:
         data = json.load(json_file)
 
-    skill_types = []
+    skill_types: List[SkillType] = []
+
     for skill_type_data in data:
         validate_skill_type_data(skill_type_data)
         name = skill_type_data['name']
@@ -142,7 +148,7 @@ def retrieve_skill_types_from_json():
     return skill_types
 
 
-def retrieve_scenario_config_from_json():
+def retrieve_scenario_config_from_json() -> ScenarioConfig:
     file_path = "scenario_config.json"
     check_file_exists(file_path)
 
@@ -216,11 +222,17 @@ def init_skill_types():
     return created_skill_types
 
 
-def init_members(skill_types):
+def init_members(skill_types: List):
     members = []
-    for sk in skill_types:
-        for _ in range(NUMBER_OF_SK_PER_TEAM):
-            members.append(Member.objects.create(skill_type=sk, team_id=1))
+
+    if SKILL_TYPE_ID > len(skill_types):
+        raise ValueError("SKILL_TYPE_ID index out of list range.")
+
+    sk = skill_types[SKILL_TYPE_ID]
+
+    for _ in range(NUMBER_OF_SK_PER_TEAM):
+        members.append(Member.objects.create(skill_type=sk, team_id=1))
+
     return members
 
 
@@ -242,13 +254,6 @@ def set_config(config: ScenarioConfig):
     config.train_skill_increase_rate = scenario_config.train_skill_increase_rate
     config.cost_member_team_event = scenario_config.cost_member_team_event
     config.randomness = scenario_config.randomness
-
-
-def set_skill_types(skill_types: List[SkillType]):
-    skill_types_data = retrieve_skill_types_from_json()
-    for i in range(len(skill_types)):
-        skill_types[i].throughput = skill_types_data[i]['throughput']
-        skill_types[i].error_rate = skill_types_data[i]['error_rate']
 
 
 def set_tasks(u):
@@ -281,13 +286,13 @@ def np_record(
             config.done_tasks_per_meeting,
             config.train_skill_increase_rate,
             len(s.members),
-            skill_types[0].name,
-            skill_types[0].throughput,
-            skill_types[0].error_rate,
-            skill_types[0].cost_per_day,
-            skill_types[0].management_quality,
-            skill_types[0].development_quality,
-            skill_types[0].signing_bonus,
+            skill_types[SKILL_TYPE_ID].name,
+            skill_types[SKILL_TYPE_ID].throughput,
+            skill_types[SKILL_TYPE_ID].error_rate,
+            skill_types[SKILL_TYPE_ID].cost_per_day,
+            skill_types[SKILL_TYPE_ID].management_quality,
+            skill_types[SKILL_TYPE_ID].development_quality,
+            skill_types[SKILL_TYPE_ID].signing_bonus,
             UP_n,
             workpack.days,
             workpack.bugfix,
@@ -416,12 +421,9 @@ def main():
 
     for x in range(1, NRUNS + 1):
         set_config(config)
-        set_skill_types(skill_types)
-        # generate a userparameter randomly
         user_params: List = [generate_user_params() for _ in range(8)]
 
         for n, UP in enumerate(user_params):
-
             set_scenario(scenario, state)
             set_members(members)
             tasks = set_tasks(scenario)
@@ -437,14 +439,14 @@ def main():
                 rec.df().to_csv(csv_buffer)
                 s3_resource = boto3.resource("s3")
                 s3_resource.Object(
-                    bucket, f"{RUNNAME}_ID{randint(10000000,99999999)}file{int(x / SAVE_EVERY)}.csv"
+                    bucket, f"{RUNNAME}_ID_{randint(10000000,99999999)}_file{int(x / SAVE_EVERY)}.csv"
                 ).put(Body=csv_buffer.getvalue())
             else:
                 if not os.path.exists(DATAPATH):
                     os.mkdir(DATAPATH)
 
                 fullname = os.path.join(
-                    DATAPATH, f"{RUNNAME}_ID{randint(10000000,99999999)}file{int(x / SAVE_EVERY)}.csv")
+                    DATAPATH, f"{RUNNAME}_ID_{randint(10000000,99999999)}_file{int(x / SAVE_EVERY)}.csv")
 
                 rec.df().to_csv(fullname)
             rec.clear()
