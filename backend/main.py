@@ -230,40 +230,34 @@ def init_config():
     pass
 
 
+def generate_random_skilltype() -> SkillType:
+    sk: SkillType = SkillType()
+
+    sk.name = f"random_{randint(10000000,99999999)}"
+    sk.throughput = randint(1, 5)
+    sk.error_rate = round(random() * 0.23 + 0.1, 2)
+    sk.cost_per_day = randint(100, 300)
+    sk.development_quality = randint(5, 100)
+    sk.management_quality = randint(5, 100)
+    sk.signing_bonus = 999
+
+    return sk
+
+
 def init_skill_types() -> List[SkillType]:
-    all_skilltypes: List[SkillType] = retrieve_skill_types_from_json()
+    if IS_RANDOM_SKILL_TYPE:
+        return [generate_random_skilltype() for _ in range(3)]
 
-    SkillType.objects.all().delete()
-
-    created_skill_types: List[SkillType] = []
-
-    for skill_type_data in all_skilltypes:
-        name = skill_type_data['name']
-        cost_per_day = skill_type_data['cost_per_day']
-        error_rate = skill_type_data['error_rate']
-        throughput = skill_type_data['throughput']
-        management_quality = skill_type_data['management_quality']
-        development_quality = skill_type_data['development_quality']
-        signing_bonus = skill_type_data['signing_bonus']
-
-        skill_type = SkillType.objects.create(
-            name=name,
-            cost_per_day=cost_per_day,
-            error_rate=error_rate,
-            throughput=throughput,
-            management_quality=management_quality,
-            development_quality=development_quality,
-            signing_bonus=signing_bonus
-        )
-        created_skill_types.append(skill_type)
-
-    return created_skill_types
+    return retrieve_skill_types_from_json()
 
 
-def init_members(skill_types: List[Member]):
+def init_members(skill_types: List[Member]) -> List[Member]:
     members: List[Member] = []
 
     if IS_RANDOM_SKILL_TYPE:
+        for sk in skill_types:
+            for _ in range(NUMBER_OF_SK_PER_TEAM):
+                members.append(Member.objects.create(skill_type=sk, team_id=1))
         return members
 
     skilltype_ids: set[int] = None
@@ -279,11 +273,8 @@ def init_members(skill_types: List[Member]):
 
     for id in SKILL_TYPE_IDS:
         sk = skill_types[id]
-        counter: int = 1
         for _ in range(NUMBER_OF_SK_PER_TEAM):
-            members.append(Member.objects.create(
-                skill_type=sk, team_id=counter))
-            counter += 1
+            members.append(Member.objects.create(skill_type=sk, team_id=1))
 
     return members
 
