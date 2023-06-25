@@ -46,7 +46,7 @@ def validate_env_file(file_path):
         raise ValueError(
             f"Unvalid value of attribute 'SKILL_TYPE_ID' in the settings.env file. SKILL_TYPE_ID soulb be > 0.")
 
-    if str(os.getenv("IS_RANDOM_USERPARAMS")).lower() not in ["true", "false"]:
+    if str(os.getenv("IS_RANDOM_HYPERPARAMS")).lower() not in ["true", "false"]:
         raise ValueError(
             f"Unvalid value of attribute 'IS_RANDOM_HYPERPARAMS' in the settings.env file. IS_RANDOM_HYPERPARAMS should be False or True.")
 
@@ -65,8 +65,8 @@ NRUNS = int(os.getenv("NRUNS"))
 SAVE_EVERY = int(os.getenv("SAVE_EVERY"))
 NUMBER_OF_SK_PER_TEAM = int(os.getenv("NUMBER_OF_SK_PER_TEAM"))
 SKILL_TYPE_ID = int(os.getenv("SKILL_TYPE_ID"))
-IS_RANDOM_USERPARAMS = os.getenv(
-    "IS_RANDOM_USERPARAMS", 'False').lower() in ('true', 't')
+IS_RANDOM_HYPERPARAMS = os.getenv(
+    "IS_RANDOM_HYPERPARAMS", 'False').lower() in ('true', 't')
 IS_RANDOM_USERPARAMS = os.getenv(
     "IS_RANDOM_USERPARAMS", 'False').lower() in ('true', 't')
 
@@ -200,16 +200,16 @@ def init_scenario() -> UserScenario:
 
 
 def init_config():
-    ScenarioConfig.objects.all().delete()
-    return ScenarioConfig.objects.create(name="c1")
+    pass
 
 
-def init_skill_types():
+def init_skill_types() -> List[SkillType]:
     skill_types_data = retrieve_skill_types_from_json()
 
     SkillType.objects.all().delete()
 
-    created_skill_types = []
+    created_skill_types: List[SkillType] = []
+
     for skill_type_data in skill_types_data:
         name = skill_type_data['name']
         cost_per_day = skill_type_data['cost_per_day']
@@ -255,16 +255,22 @@ def run_simulation(scenario, config, members, tasks, skill_types, rec, UP, UP_n)
     rec.add(s, config, skill_types, UP, UP_n)
 
 
-def set_config(config: ScenarioConfig):
-    scenario_config = retrieve_scenario_config_from_json()
+def generate_random_scneario_config():
+    config: ScenarioConfig = ScenarioConfig()
 
-    config.stress_weekend_reduction = scenario_config.stress_weekend_reduction
-    config.stress_overtime_increase = scenario_config.stress_overtime_increase
-    config.stress_error_increase = scenario_config.stress_error_increase
-    config.done_tasks_per_meeting = scenario_config.done_tasks_per_meeting
-    config.train_skill_increase_rate = scenario_config.train_skill_increase_rate
-    config.cost_member_team_event = scenario_config.cost_member_team_event
-    config.randomness = scenario_config.randomness
+    config.name = f"random_config_{randint(10000000,99999999)}"
+    config.stress_weekend_reduction = round(random() * 0.8, 2)
+    config.stress_overtime_increase = round(random() * 0.25, 2)
+    config.stress_error_increase = round(random() * 0.33, 2)
+    config.done_tasks_per_meeting = randint(0, 5) * 20
+    config.train_skill_increase_rate = round(random() * 0.5, 2)
+
+
+def set_config() -> ScenarioConfig:
+    if IS_RANDOM_HYPERPARAMS:
+        return generate_random_scneario_config()
+
+    return retrieve_scenario_config_from_json()
 
 
 def set_tasks(u):
@@ -422,19 +428,26 @@ def generate_user_params() -> Workpack:
     return wp
 
 
+def set_user_params() -> List[Workpack]:
+    if IS_RANDOM_USERPARAMS:
+        return [generate_user_params() for _ in range(8)]
+
+    return USERPARAMETERS
+
+
 def main():
     check_file_exists("settings.env")
     validate_env_file("settings.env")
     print("Started")
     rec = NpRecord()
     scenario, state, team = init_scenario()
-    config = init_config()
+    # config = init_config()
     skill_types = init_skill_types()
     members = init_members(skill_types)
 
     for x in range(1, NRUNS + 1):
-        set_config(config)
-        user_params: List = [generate_user_params() for _ in range(8)]
+        config: ScenarioConfig = set_config()
+        user_params: List = set_user_params()
 
         for n, UP in enumerate(user_params):
             set_scenario(scenario, state)
