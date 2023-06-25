@@ -26,9 +26,22 @@ def check_file_exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist.")
 
 
+def check_skilltype_ids(text: str) -> bool:
+    text = text.strip()
+
+    if text == "":
+        return False
+
+    try:
+        [int(x.strip()) for x in text.split(',')]
+        return True
+    except:
+        return False
+
+
 def validate_env_file(file_path):
-    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY",
-                           "NUMBER_OF_SK_PER_TEAM", "SKILL_TYPE_ID", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS"]
+    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM",
+                           "SKILL_TYPE_IDS", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS", "IS_RANDOM_SKILLTYPES_IDS", "IS_RANDOM_SKILLTYPE"]
     load_dotenv(file_path)
 
     missing_attributes = [
@@ -40,19 +53,27 @@ def validate_env_file(file_path):
 
     if int(os.getenv("NUMBER_OF_SK_PER_TEAM")) < 1 or int(os.getenv("NUMBER_OF_SK_PER_TEAM")) > 10:
         raise ValueError(
-            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the settings.env file. NUMBER_OF_SK_PER_TEAM soulb be > 0 and <= 10")
+            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the settings.env file. NUMBER_OF_SK_PER_TEAM should be > 0 and <= 10")
 
-    if int(os.getenv("SKILL_TYPE_ID")) < 0:
+    if not check_skilltype_ids(os.getenv("SKILL_TYPE_IDS")):
         raise ValueError(
-            f"Unvalid value of attribute 'SKILL_TYPE_ID' in the settings.env file. SKILL_TYPE_ID soulb be > 0.")
+            f"Unvalid value of attribute 'SKILL_TYPE_IDS' in the settings.env file. SKILL_TYPE_IDS should like '1,2,3,4,n'.")
 
-    if str(os.getenv("IS_RANDOM_HYPERPARAMS")).lower() not in ["true", "false"]:
+    if str(os.getenv("IS_RANDOM_HYPERPARAMS")).lower().strip() not in ["true", "false"]:
         raise ValueError(
             f"Unvalid value of attribute 'IS_RANDOM_HYPERPARAMS' in the settings.env file. IS_RANDOM_HYPERPARAMS should be False or True.")
 
-    if str(os.getenv("IS_RANDOM_USERPARAMS")).lower() not in ["true", "false"]:
+    if str(os.getenv("IS_RANDOM_USERPARAMS")).lower().strip() not in ["true", "false"]:
         raise ValueError(
             f"Unvalid value of attribute 'IS_RANDOM_USERPARAMS' in the settings.env file. IS_RANDOM_USERPARAMS should be False or True.")
+
+    if str(os.getenv("IS_RANDOM_SKILL_TYPE_IDS")).lower().strip() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute 'IS_RANDOM_SKILL_TYPE_IDS' in the settings.env file. IS_RANDOM_SKILL_TYPE_IDS should be False or True.")
+
+    if str(os.getenv("IS_RANDOM_SKILL_TYPE")).lower().strip() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute IS_RANDOM_SKILL_TYPE in the settings.env file. IS_RANDOM_SKILL_TYPE should be False or True.")
 
 
 load_dotenv("settings.env")
@@ -64,11 +85,17 @@ RUNNAME = os.getenv("RUNNAME")
 NRUNS = int(os.getenv("NRUNS"))
 SAVE_EVERY = int(os.getenv("SAVE_EVERY"))
 NUMBER_OF_SK_PER_TEAM = int(os.getenv("NUMBER_OF_SK_PER_TEAM"))
-SKILL_TYPE_ID = int(os.getenv("SKILL_TYPE_ID"))
+
 IS_RANDOM_HYPERPARAMS = os.getenv(
-    "IS_RANDOM_HYPERPARAMS", 'False').lower() in ('true', 't')
+    "IS_RANDOM_HYPERPARAMS", 'False').lower().strip() in ('true', 't')
 IS_RANDOM_USERPARAMS = os.getenv(
-    "IS_RANDOM_USERPARAMS", 'False').lower() in ('true', 't')
+    "IS_RANDOM_USERPARAMS", 'False').lower().strip() in ('true', 't')
+IS_RANDOM_SKILL_TYPE_IDS = os.getenv(
+    "IS_RANDOM_SKILL_TYPE_IDS", 'False').lower().strip() in ('true', 't')
+IS_RANDOM_SKILL_TYPE = os.getenv(
+    "IS_RANDOM_SKILL_TYPE", 'False').lower().strip() in ('true', 't')
+SKILL_TYPE_IDS: List[int] = [int(x.strip())
+                             for x in os.getenv("SKILL_TYPE_IDS").split(',')]
 
 Team.objects.create()
 
@@ -204,13 +231,13 @@ def init_config():
 
 
 def init_skill_types() -> List[SkillType]:
-    skill_types_data = retrieve_skill_types_from_json()
+    all_skilltypes: List[SkillType] = retrieve_skill_types_from_json()
 
     SkillType.objects.all().delete()
 
     created_skill_types: List[SkillType] = []
 
-    for skill_type_data in skill_types_data:
+    for skill_type_data in all_skilltypes:
         name = skill_type_data['name']
         cost_per_day = skill_type_data['cost_per_day']
         error_rate = skill_type_data['error_rate']
@@ -233,16 +260,30 @@ def init_skill_types() -> List[SkillType]:
     return created_skill_types
 
 
-def init_members(skill_types: List):
-    members = []
+def init_members(skill_types: List[Member]):
+    members: List[Member] = []
 
-    if SKILL_TYPE_ID > len(skill_types):
-        raise ValueError("SKILL_TYPE_ID index out of list range.")
+    if IS_RANDOM_SKILL_TYPE:
+        return members
 
-    sk = skill_types[SKILL_TYPE_ID]
+    skilltype_ids: set[int] = None
 
-    for _ in range(NUMBER_OF_SK_PER_TEAM):
-        members.append(Member.objects.create(skill_type=sk, team_id=1))
+    if IS_RANDOM_SKILL_TYPE_IDS:
+        skilltype_ids = set([randint(len(skill_types)) for _ in range(3)])
+    else:
+        skilltype_ids = set(SKILL_TYPE_IDS)
+
+    if len(skilltype_ids) > len(skill_types):
+        raise ValueError(
+            "Number of ids is larger than the list of skilltypes.")
+
+    for id in SKILL_TYPE_IDS:
+        sk = skill_types[id]
+        counter: int = 1
+        for _ in range(NUMBER_OF_SK_PER_TEAM):
+            members.append(Member.objects.create(
+                skill_type=sk, team_id=counter))
+            counter += 1
 
     return members
 
