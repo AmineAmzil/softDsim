@@ -27,20 +27,21 @@ def check_file_exists(file_path):
 
 
 def check_skilltype_ids(text: str) -> bool:
+    print(text)
     text = text.strip()
 
     if text == "":
         return False
 
     try:
-        return len([int(x.strip()) for x in text.split]) <= 3
+        return len([int(x.strip()) for x in text.split(',')]) <= 3
     except:
         return False
 
 
 def validate_env_file(file_path):
     required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM",
-                           "SKILL_TYPE_IDS", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS", "IS_RANDOM_SKILLTYPES_IDS", "IS_RANDOM_SKILLTYPE"]
+                           "SKILL_TYPE_IDS", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS", "IS_RANDOM_SKILL_TYPE_IDS", "IS_RANDOM_SKILL_TYPE"]
     load_dotenv(file_path)
 
     missing_attributes = [
@@ -56,7 +57,7 @@ def validate_env_file(file_path):
 
     if not check_skilltype_ids(os.getenv("SKILL_TYPE_IDS")):
         raise ValueError(
-            f"Unvalid value of attribute 'SKILL_TYPE_IDS' in the settings.env file. SKILL_TYPE_IDS should like '1,2,3,4,n'.")
+            f"Unvalid value of attribute 'SKILL_TYPE_IDS' in the settings.env file. SKILL_TYPE_IDS should like '1,2,3' len < 4.")
 
     if str(os.getenv("IS_RANDOM_HYPERPARAMS")).lower().strip() not in ["true", "false"]:
         raise ValueError(
@@ -163,24 +164,17 @@ def retrieve_skill_types_from_json() -> List[SkillType]:
 
     for skill_type_data in data:
         validate_skill_type_data(skill_type_data)
-        name = skill_type_data['name']
-        cost_per_day = skill_type_data['cost_per_day']
-        error_rate = skill_type_data['error_rate']
-        throughput = skill_type_data['throughput']
-        management_quality = skill_type_data['management_quality']
-        development_quality = skill_type_data['development_quality']
-        signing_bonus = skill_type_data['signing_bonus']
+        sk: SkillType = SkillType.objects.create(
+            name=skill_type_data['name'],
+            cost_per_day=skill_type_data['cost_per_day'],
+            error_rate=skill_type_data['error_rate'],
+            throughput=skill_type_data['throughput'],
+            management_quality=skill_type_data['management_quality'],
+            development_quality=skill_type_data['development_quality'],
+            signing_bonus=skill_type_data['signing_bonus']
 
-        skill_type = {
-            'name': name,
-            'cost_per_day': cost_per_day,
-            'error_rate': error_rate,
-            'throughput': throughput,
-            'management_quality': management_quality,
-            'development_quality': development_quality,
-            'signing_bonus': signing_bonus
-        }
-        skill_types.append(skill_type)
+        )
+        skill_types.append(sk)
 
     return skill_types
 
@@ -230,7 +224,7 @@ def init_config():
 
 
 def generate_random_skilltype() -> SkillType:
-    sk: SkillType = SkillType()
+    sk: SkillType = SkillType.objects.create()
 
     sk.name = f"random_{randint(10000000,99999999)}"
     sk.throughput = randint(1, 5)
@@ -244,13 +238,15 @@ def generate_random_skilltype() -> SkillType:
 
 
 def init_skill_types() -> List[SkillType]:
+    SkillType.objects.all().delete()
+
     if IS_RANDOM_SKILL_TYPE:
         return [generate_random_skilltype() for _ in range(3)]
 
     return retrieve_skill_types_from_json()
 
 
-def init_members(skill_types: List[Member]) -> List[Member]:
+def init_members(skill_types: List[SkillType]) -> List[Member]:
     members: List[Member] = []
 
     if IS_RANDOM_SKILL_TYPE:
@@ -510,7 +506,6 @@ def main():
     print("Started")
     rec = NpRecord()
     scenario, state, team = init_scenario()
-    # config = init_config()
     skill_types = init_skill_types()
     members = init_members(skill_types)
 
