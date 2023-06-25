@@ -45,10 +45,10 @@ def validate_env_file(file_path):
             f"Unvalid value of attribute 'SKILL_TYPE_ID' in the .env file. SKILL_TYPE_ID soulb be > 0.")
 
 
-check_file_exists("testparams.env")
-validate_env_file("testparams.env")
+check_file_exists("settings.env")
+validate_env_file("settings.env")
 
-load_dotenv("testparams.env")
+load_dotenv("settings.env")
 
 bucket = os.getenv("bucket")
 USE_S3 = os.getenv("USE_S3", 'False').lower() in ('true', '1', 't')
