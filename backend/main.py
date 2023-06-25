@@ -27,26 +27,33 @@ def check_file_exists(file_path):
 
 
 def validate_env_file(file_path):
-    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME",
-                           "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM", "SKILL_TYPE_ID"]
+    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY",
+                           "NUMBER_OF_SK_PER_TEAM", "SKILL_TYPE_ID", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS"]
     load_dotenv(file_path)
+
     missing_attributes = [
         attr for attr in required_attributes if os.getenv(attr) is None]
+
     if missing_attributes:
         raise ValueError(
             f"Missing attributes in the .env file: {', '.join(missing_attributes)}")
 
     if int(os.getenv("NUMBER_OF_SK_PER_TEAM")) < 1 or int(os.getenv("NUMBER_OF_SK_PER_TEAM")) > 10:
         raise ValueError(
-            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the .env file. NUMBER_OF_SK_PER_TEAM soulb be > 0 and <= 10")
+            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the settings.env file. NUMBER_OF_SK_PER_TEAM soulb be > 0 and <= 10")
 
     if int(os.getenv("SKILL_TYPE_ID")) < 0:
         raise ValueError(
-            f"Unvalid value of attribute 'SKILL_TYPE_ID' in the .env file. SKILL_TYPE_ID soulb be > 0.")
+            f"Unvalid value of attribute 'SKILL_TYPE_ID' in the settings.env file. SKILL_TYPE_ID soulb be > 0.")
 
+    if str(os.getenv("IS_RANDOM_USERPARAMS")).lower() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute 'IS_RANDOM_HYPERPARAMS' in the settings.env file. IS_RANDOM_HYPERPARAMS should be False or True.")
 
-check_file_exists("settings.env")
-validate_env_file("settings.env")
+    if str(os.getenv("IS_RANDOM_USERPARAMS")).lower() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute 'IS_RANDOM_USERPARAMS' in the settings.env file. IS_RANDOM_USERPARAMS should be False or True.")
+
 
 load_dotenv("settings.env")
 
@@ -58,6 +65,10 @@ NRUNS = int(os.getenv("NRUNS"))
 SAVE_EVERY = int(os.getenv("SAVE_EVERY"))
 NUMBER_OF_SK_PER_TEAM = int(os.getenv("NUMBER_OF_SK_PER_TEAM"))
 SKILL_TYPE_ID = int(os.getenv("SKILL_TYPE_ID"))
+IS_RANDOM_USERPARAMS = os.getenv(
+    "IS_RANDOM_USERPARAMS", 'False').lower() in ('true', 't')
+IS_RANDOM_USERPARAMS = os.getenv(
+    "IS_RANDOM_USERPARAMS", 'False').lower() in ('true', 't')
 
 Team.objects.create()
 
@@ -412,6 +423,8 @@ def generate_user_params() -> Workpack:
 
 
 def main():
+    check_file_exists("settings.env")
+    validate_env_file("settings.env")
     print("Started")
     rec = NpRecord()
     scenario, state, team = init_scenario()
