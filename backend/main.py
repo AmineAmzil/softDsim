@@ -33,8 +33,7 @@ def check_skilltype_ids(text: str) -> bool:
         return False
 
     try:
-        [int(x.strip()) for x in text.split(',')]
-        return True
+        return len([int(x.strip()) for x in text.split]) <= 3
     except:
         return False
 
@@ -335,13 +334,28 @@ def np_record(
             config.done_tasks_per_meeting,
             config.train_skill_increase_rate,
             len(s.members),
-            skill_types[SKILL_TYPE_ID].name,
-            skill_types[SKILL_TYPE_ID].throughput,
-            skill_types[SKILL_TYPE_ID].error_rate,
-            skill_types[SKILL_TYPE_ID].cost_per_day,
-            skill_types[SKILL_TYPE_ID].management_quality,
-            skill_types[SKILL_TYPE_ID].development_quality,
-            skill_types[SKILL_TYPE_ID].signing_bonus,
+            NUMBER_OF_SK_PER_TEAM,
+            skill_types[0].name,
+            skill_types[0].throughput,
+            skill_types[0].error_rate,
+            skill_types[0].cost_per_day,
+            skill_types[0].management_quality,
+            skill_types[0].development_quality,
+            skill_types[0].signing_bonus,
+            skill_types[1].name,
+            skill_types[1].throughput,
+            skill_types[1].error_rate,
+            skill_types[1].cost_per_day,
+            skill_types[1].management_quality,
+            skill_types[1].development_quality,
+            skill_types[1].signing_bonus,
+            skill_types[2].name,
+            skill_types[2].throughput,
+            skill_types[2].error_rate,
+            skill_types[2].cost_per_day,
+            skill_types[2].management_quality,
+            skill_types[2].development_quality,
+            skill_types[2].signing_bonus,
             UP_n,
             workpack.days,
             workpack.bugfix,
@@ -361,6 +375,10 @@ def np_record(
             mean([m.motivation for m in s.members]),
             len(s.tasks.accepted()),
             len(s.tasks.rejected()),
+            IS_RANDOM_HYPERPARAMS,
+            IS_RANDOM_USERPARAMS,
+            IS_RANDOM_SKILL_TYPE,
+            IS_RANDOM_SKILL_TYPE_IDS
         ]
     )
 
@@ -387,14 +405,29 @@ class NpRecord:
                 "c_sei",
                 "c_dtm",
                 "c_tsi",
-                "s_number_of_sk",
-                "s_name",
-                "s_throughput",
-                "s_error_rate",
-                "s_cost_per_day",
-                "s_management_quality",
-                "s_development_quality",
-                "s_signing_bonus",
+                "s_team_size",
+                "s_number_of_sk_per_team",
+                "s_1name",
+                "s_1throughput",
+                "s_1error_rate",
+                "s_1cost_per_day",
+                "s_1management_quality",
+                "s_1development_quality",
+                "s_1signing_bonus",
+                "s_2name",
+                "s_2throughput",
+                "s_2error_rate",
+                "s_2cost_per_day",
+                "s_2management_quality",
+                "s_2development_quality",
+                "s_2signing_bonus",
+                "s_3name",
+                "s_3throughput",
+                "s_3error_rate",
+                "s_3cost_per_day",
+                "s_3management_quality",
+                "s_3development_quality",
+                "s_3signing_bonus",
                 "UP",
                 "days",
                 "bugfix",
@@ -414,6 +447,10 @@ class NpRecord:
                 "Mot",
                 "Acc",
                 "Rej",
+                "IS_RANDOM_HYPERPARAMS",
+                "IS_RANDOM_USERPARAMS",
+                "IS_RANDOM_SKILL_TYPE",
+                "IS_RANDOM_SKILL_TYPE_IDS"
             ],
         )
 
