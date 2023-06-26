@@ -21,6 +21,8 @@ import json
 
 print("MAIN SCRIPT")
 
+skill_type_ids: List[int] = []
+
 
 def check_file_exists(file_path):
     if not os.path.isfile(file_path):
@@ -28,19 +30,18 @@ def check_file_exists(file_path):
 
 
 def check_skilltype_ids(text: str) -> bool:
-    print(text)
     text = text.strip()
 
     if text == "":
         return False
 
     try:
-        return len([int(x.strip()) for x in text.split(',')]) <= 3
+        return len([int(x.strip()) for x in text.split(',')]) == 3
     except:
         return False
 
 
-def validate_env_file(file_path):
+def validate_settings_file(file_path):
     required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM",
                            "SKILL_TYPE_IDS", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS", "IS_RANDOM_SKILL_TYPE_IDS", "IS_RANDOM_SKILL_TYPE"]
     load_dotenv(file_path)
@@ -58,7 +59,7 @@ def validate_env_file(file_path):
 
     if not check_skilltype_ids(os.getenv("SKILL_TYPE_IDS")):
         raise ValueError(
-            f"Unvalid value of attribute 'SKILL_TYPE_IDS' in the settings.env file. SKILL_TYPE_IDS should like '1,2,3' len < 4.")
+            f"Unvalid value of attribute 'SKILL_TYPE_IDS' in the settings.env file. SKILL_TYPE_IDS should like '1,2,3' len = 3.")
 
     if str(os.getenv("IS_RANDOM_HYPERPARAMS")).lower().strip() not in ["true", "false"]:
         raise ValueError(
@@ -252,27 +253,33 @@ def init_skill_types() -> List[SkillType]:
 def init_members(skill_types: List[SkillType]) -> List[Member]:
     members: List[Member] = []
 
+    # If the skill types are generated randomly, we are sure
+    # the the list contains exactly 3 skill types
+    # so we dont have to choose between them.
     if IS_RANDOM_SKILL_TYPE:
         for sk in skill_types:
             for _ in range(NUMBER_OF_SK_PER_TEAM):
                 members.append(Member.objects.create(skill_type=sk, team_id=1))
         return members
 
-    skilltype_ids: set[int] = None
-
     if IS_RANDOM_SKILL_TYPE_IDS:
         print("RANDOM SKILL TYPE IDS")
-        skilltype_ids = set([randint(len(skill_types))
-                            for _ in range(3)])
+        [skill_type_ids.append(randint(0, len(skill_types) - 1))
+         for _ in range(3)]
+
     else:
         print("GIVEN SKILL TYPE IDS")
-        skilltype_ids = set(SKILL_TYPE_IDS)
+        [skill_type_ids.append(x) for x in SKILL_TYPE_IDS]
 
-    if len(skilltype_ids) > len(skill_types):
-        raise ValueError(
-            "Number of ids is larger than the list of skilltypes.")
+        if len(skill_type_ids) > len(skill_types):
+            raise ValueError(
+                "Number of ids is bigger than the list of skilltypes.")
 
-    for id in skilltype_ids:
+        for id in skill_type_ids:
+            if id > len(skill_types) - 1:
+                raise ValueError(f"Id {id} is out of bound.")
+
+    for id in skill_type_ids:
         sk = skill_types[id]
         for _ in range(NUMBER_OF_SK_PER_TEAM):
             members.append(Member.objects.create(skill_type=sk, team_id=1))
@@ -345,27 +352,27 @@ def np_record(
             config.train_skill_increase_rate,
             len(s.members),
             NUMBER_OF_SK_PER_TEAM,
-            skill_types[0].name,
-            skill_types[0].throughput,
-            skill_types[0].error_rate,
-            skill_types[0].cost_per_day,
-            skill_types[0].management_quality,
-            skill_types[0].development_quality,
-            skill_types[0].signing_bonus,
-            skill_types[1].name,
-            skill_types[1].throughput,
-            skill_types[1].error_rate,
-            skill_types[1].cost_per_day,
-            skill_types[1].management_quality,
-            skill_types[1].development_quality,
-            skill_types[1].signing_bonus,
-            skill_types[2].name,
-            skill_types[2].throughput,
-            skill_types[2].error_rate,
-            skill_types[2].cost_per_day,
-            skill_types[2].management_quality,
-            skill_types[2].development_quality,
-            skill_types[2].signing_bonus,
+            skill_types[skill_type_ids[0]].name,
+            skill_types[skill_type_ids[0]].throughput,
+            skill_types[skill_type_ids[0]].error_rate,
+            skill_types[skill_type_ids[0]].cost_per_day,
+            skill_types[skill_type_ids[0]].management_quality,
+            skill_types[skill_type_ids[0]].development_quality,
+            skill_types[skill_type_ids[0]].signing_bonus,
+            skill_types[skill_type_ids[1]].name,
+            skill_types[skill_type_ids[1]].throughput,
+            skill_types[skill_type_ids[1]].error_rate,
+            skill_types[skill_type_ids[1]].cost_per_day,
+            skill_types[skill_type_ids[1]].management_quality,
+            skill_types[skill_type_ids[1]].development_quality,
+            skill_types[skill_type_ids[1]].signing_bonus,
+            skill_types[skill_type_ids[2]].name,
+            skill_types[skill_type_ids[2]].throughput,
+            skill_types[skill_type_ids[2]].error_rate,
+            skill_types[skill_type_ids[2]].cost_per_day,
+            skill_types[skill_type_ids[2]].management_quality,
+            skill_types[skill_type_ids[2]].development_quality,
+            skill_types[skill_type_ids[2]].signing_bonus,
             UP_n,
             workpack.days,
             workpack.bugfix,
@@ -518,7 +525,7 @@ def set_user_params() -> List[Workpack]:
 
 def main():
     check_file_exists("settings.env")
-    validate_env_file("settings.env")
+    validate_settings_file("settings.env")
     print("Started")
     rec = NpRecord()
     scenario, state, team = init_scenario()
