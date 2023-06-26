@@ -1,12 +1,48 @@
 [
   {
+    "name": "backend_developer_junior",
+    "cost_per_day": 171.15,
+    "error_rate": 0.06,
+    "throughput": 2,
+    "management_quality": 10,
+    "development_quality": 25,
+    "signing_bonus": 9999
+  },
+  {
+    "name": "backend_developer_senior",
+    "cost_per_day": 250,
+    "error_rate": 0.03,
+    "throughput": 3,
+    "management_quality": 10,
+    "development_quality": 70,
+    "signing_bonus": 9999
+  },
+  {
+    "name": "frontend_developer_senior",
+    "cost_per_day": 216.09,
+    "error_rate": 0.03,
+    "throughput": 3,
+    "management_quality": 10,
+    "development_quality": 50,
+    "signing_bonus": 9999
+  },
+  {
+    "name": "software_tester",
+    "cost_per_day": 217.06,
+    "error_rate": 0.02,
+    "throughput": 3,
+    "management_quality": 10,
+    "development_quality": 90,
+    "signing_bonus": 9999
+  },
+  {
     "name": "junior_consultant",
     "cost_per_day": 182.69,
     "error_rate": 0.06,
     "throughput": 2,
     "management_quality": 70,
     "development_quality": 10,
-    "signing_bonus": 13000
+    "signing_bonus": 9999
   },
   {
     "name": "senior_consultant",
@@ -15,7 +51,7 @@
     "throughput": 4,
     "management_quality": 40,
     "development_quality": 20,
-    "signing_bonus": 13000
+    "signing_bonus": 9999
   },
   {
     "name": "technical_specialist",
@@ -24,7 +60,7 @@
     "throughput": 3,
     "management_quality": 10,
     "development_quality": 50,
-    "signing_bonus": 13000
+    "signing_bonus": 9999
   },
   {
     "name": "frontend_developer_junior",
