@@ -221,10 +221,6 @@ def init_scenario() -> UserScenario:
     return us, state, team
 
 
-def init_config():
-    pass
-
-
 def generate_random_skilltype() -> SkillType:
     sk: SkillType = SkillType.objects.create()
 
@@ -243,10 +239,8 @@ def init_skill_types() -> List[SkillType]:
     SkillType.objects.all().delete()
 
     if IS_RANDOM_SKILL_TYPE:
-        print("RANDOM SKILL TYPES")
         return [generate_random_skilltype() for _ in range(3)]
 
-    print("GIVEN SKILL TYPES")
     return retrieve_skill_types_from_json()
 
 
@@ -263,12 +257,10 @@ def init_members(skill_types: List[SkillType]) -> List[Member]:
         return members
 
     if IS_RANDOM_SKILL_TYPE_IDS:
-        print("RANDOM SKILL TYPE IDS")
         [skill_type_ids.append(randint(0, len(skill_types) - 1))
          for _ in range(3)]
 
     else:
-        print("GIVEN SKILL TYPE IDS")
         [skill_type_ids.append(x) for x in SKILL_TYPE_IDS]
 
         if len(skill_type_ids) > len(skill_types):
@@ -314,14 +306,12 @@ def generate_random_scneario_config() -> ScenarioConfig:
 
 def set_config() -> ScenarioConfig:
     if IS_RANDOM_HYPERPARAMS:
-        print("RANDOM CONFIG")
         return generate_random_scneario_config()
 
-    print("GIVEN CONFIG")
     return retrieve_scenario_config_from_json()
 
 
-def set_tasks(u):
+def reset_tasks(u):
     TOTAL = 200
     tasks = set()
     for _ in range(int(TOTAL * 0.25)):
@@ -472,7 +462,7 @@ class NpRecord:
         )
 
 
-def set_members(members: List[Member]):
+def reset_members(members: List[Member]):
     for member in members:
         member.familiar_tasks = 0
         member.familiarity = 0
@@ -481,7 +471,7 @@ def set_members(members: List[Member]):
         member.xp = 0
 
 
-def set_scenario(scenario: UserScenario, state: ScenarioState):
+def reset_scenario(scenario: UserScenario, state: ScenarioState):
     state.cost = 0
     state.day = 0
 
@@ -516,10 +506,8 @@ def generate_user_params() -> Workpack:
 
 def set_user_params() -> List[Workpack]:
     if IS_RANDOM_USERPARAMS:
-        print("RANDOM USER PARAMS")
         return [generate_user_params() for _ in range(8)]
 
-    print("GIVEN USER PARAMS")
     return USERPARAMETERS
 
 
@@ -537,17 +525,15 @@ def main():
         user_params: List = set_user_params()
 
         for n, UP in enumerate(user_params):
-            set_scenario(scenario, state)
-            set_members(members)
-            tasks = set_tasks(scenario)
+            reset_scenario(scenario, state)
+            reset_members(members)
+            tasks = reset_tasks(scenario)
             run_simulation(scenario, config, members,
                            tasks, skill_types, rec, UP, n)
-            # print(f"{len(tasks.done())} \t {mean([m.efficiency for m in members])}")
 
         if x % SAVE_EVERY == 0:
             print(f"{x} of {NRUNS}")
             if USE_S3:
-                print("Saving in S3")
                 csv_buffer = StringIO()
                 rec.df().to_csv(csv_buffer)
                 s3_resource = boto3.resource("s3")
