@@ -12,13 +12,16 @@ from pandas import DataFrame
 import numpy as np
 from typing import List
 from statistics import mean
+import random
 from random import randint
 import os
 from dotenv import load_dotenv
 import json
-import random
+
 
 print("MAIN SCRIPT")
+
+skill_type_ids: List[int] = []
 
 
 def check_file_exists(file_path):
@@ -26,29 +29,56 @@ def check_file_exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist.")
 
 
-def validate_env_file(file_path):
-    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME",
-                           "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM", "SKILL_TYPE_ID"]
+def check_skilltype_ids(text: str) -> bool:
+    text = text.strip()
+
+    if text == "":
+        return False
+
+    try:
+        return len([int(x.strip()) for x in text.split(',')]) == 3
+    except:
+        return False
+
+
+def validate_settings_file(file_path):
+    required_attributes = ["bucket", "USE_S3", "DATAPATH", "RUNNAME", "NRUNS", "SAVE_EVERY", "NUMBER_OF_SK_PER_TEAM",
+                           "SKILL_TYPE_IDS", "IS_RANDOM_HYPERPARAMS", "IS_RANDOM_USERPARAMS", "IS_RANDOM_SKILL_TYPE_IDS", "IS_RANDOM_SKILL_TYPE"]
     load_dotenv(file_path)
+
     missing_attributes = [
         attr for attr in required_attributes if os.getenv(attr) is None]
+
     if missing_attributes:
         raise ValueError(
             f"Missing attributes in the .env file: {', '.join(missing_attributes)}")
 
     if int(os.getenv("NUMBER_OF_SK_PER_TEAM")) < 1 or int(os.getenv("NUMBER_OF_SK_PER_TEAM")) > 10:
         raise ValueError(
-            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the .env file. NUMBER_OF_SK_PER_TEAM soulb be > 0 and <= 10")
+            f"Unvalid value of attribute 'NUMBER_OF_SK_PER_TEAM' in the settings.env file. NUMBER_OF_SK_PER_TEAM should be > 0 and <= 10")
 
-    if int(os.getenv("SKILL_TYPE_ID")) < 0:
+    if not check_skilltype_ids(os.getenv("SKILL_TYPE_IDS")):
         raise ValueError(
-            f"Unvalid value of attribute 'SKILL_TYPE_ID' in the .env file. SKILL_TYPE_ID soulb be > 0.")
+            f"Unvalid value of attribute 'SKILL_TYPE_IDS' in the settings.env file. SKILL_TYPE_IDS should like '1,2,3' len = 3.")
+
+    if str(os.getenv("IS_RANDOM_HYPERPARAMS")).lower().strip() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute 'IS_RANDOM_HYPERPARAMS' in the settings.env file. IS_RANDOM_HYPERPARAMS should be False or True.")
+
+    if str(os.getenv("IS_RANDOM_USERPARAMS")).lower().strip() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute 'IS_RANDOM_USERPARAMS' in the settings.env file. IS_RANDOM_USERPARAMS should be False or True.")
+
+    if str(os.getenv("IS_RANDOM_SKILL_TYPE_IDS")).lower().strip() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute 'IS_RANDOM_SKILL_TYPE_IDS' in the settings.env file. IS_RANDOM_SKILL_TYPE_IDS should be False or True.")
+
+    if str(os.getenv("IS_RANDOM_SKILL_TYPE")).lower().strip() not in ["true", "false"]:
+        raise ValueError(
+            f"Unvalid value of attribute IS_RANDOM_SKILL_TYPE in the settings.env file. IS_RANDOM_SKILL_TYPE should be False or True.")
 
 
-check_file_exists("testparams.env")
-validate_env_file("testparams.env")
-
-load_dotenv("testparams.env")
+load_dotenv("settings.env")
 
 bucket = os.getenv("bucket")
 USE_S3 = os.getenv("USE_S3", 'False').lower() in ('true', '1', 't')
@@ -57,7 +87,17 @@ RUNNAME = os.getenv("RUNNAME")
 NRUNS = int(os.getenv("NRUNS"))
 SAVE_EVERY = int(os.getenv("SAVE_EVERY"))
 NUMBER_OF_SK_PER_TEAM = int(os.getenv("NUMBER_OF_SK_PER_TEAM"))
-SKILL_TYPE_ID = int(os.getenv("SKILL_TYPE_ID"))
+
+IS_RANDOM_HYPERPARAMS = os.getenv(
+    "IS_RANDOM_HYPERPARAMS", 'False').lower().strip() in ('true', 't')
+IS_RANDOM_USERPARAMS = os.getenv(
+    "IS_RANDOM_USERPARAMS", 'False').lower().strip() in ('true', 't')
+IS_RANDOM_SKILL_TYPE_IDS = os.getenv(
+    "IS_RANDOM_SKILL_TYPE_IDS", 'False').lower().strip() in ('true', 't')
+IS_RANDOM_SKILL_TYPE = os.getenv(
+    "IS_RANDOM_SKILL_TYPE", 'False').lower().strip() in ('true', 't')
+SKILL_TYPE_IDS: List[int] = [int(x.strip())
+                             for x in os.getenv("SKILL_TYPE_IDS").split(',')]
 
 Team.objects.create()
 
@@ -126,24 +166,17 @@ def retrieve_skill_types_from_json() -> List[SkillType]:
 
     for skill_type_data in data:
         validate_skill_type_data(skill_type_data)
-        name = skill_type_data['name']
-        cost_per_day = skill_type_data['cost_per_day']
-        error_rate = skill_type_data['error_rate']
-        throughput = skill_type_data['throughput']
-        management_quality = skill_type_data['management_quality']
-        development_quality = skill_type_data['development_quality']
-        signing_bonus = skill_type_data['signing_bonus']
+        sk: SkillType = SkillType.objects.create(
+            name=skill_type_data['name'],
+            cost_per_day=skill_type_data['cost_per_day'],
+            error_rate=skill_type_data['error_rate'],
+            throughput=skill_type_data['throughput'],
+            management_quality=skill_type_data['management_quality'],
+            development_quality=skill_type_data['development_quality'],
+            signing_bonus=skill_type_data['signing_bonus']
 
-        skill_type = {
-            'name': name,
-            'cost_per_day': cost_per_day,
-            'error_rate': error_rate,
-            'throughput': throughput,
-            'management_quality': management_quality,
-            'development_quality': development_quality,
-            'signing_bonus': signing_bonus
-        }
-        skill_types.append(skill_type)
+        )
+        skill_types.append(sk)
 
     return skill_types
 
@@ -188,50 +221,60 @@ def init_scenario() -> UserScenario:
     return us, state, team
 
 
-def init_config():
-    ScenarioConfig.objects.all().delete()
-    return ScenarioConfig.objects.create(name="c1")
+def generate_random_skilltype() -> SkillType:
+    sk: SkillType = SkillType.objects.create()
+
+    sk.name = f"random_{randint(10000000,99999999)}"
+    sk.throughput = randint(1, 5)
+    sk.error_rate = round(random.random() * 0.23 + 0.1, 2)
+    sk.cost_per_day = randint(100, 300)
+    sk.development_quality = randint(5, 100)
+    sk.management_quality = randint(5, 100)
+    sk.signing_bonus = 999
+
+    return sk
 
 
-def init_skill_types():
-    skill_types_data = retrieve_skill_types_from_json()
-
+def init_skill_types() -> List[SkillType]:
     SkillType.objects.all().delete()
 
-    created_skill_types = []
-    for skill_type_data in skill_types_data:
-        name = skill_type_data['name']
-        cost_per_day = skill_type_data['cost_per_day']
-        error_rate = skill_type_data['error_rate']
-        throughput = skill_type_data['throughput']
-        management_quality = skill_type_data['management_quality']
-        development_quality = skill_type_data['development_quality']
-        signing_bonus = skill_type_data['signing_bonus']
+    if IS_RANDOM_SKILL_TYPE:
+        return [generate_random_skilltype() for _ in range(3)]
 
-        skill_type = SkillType.objects.create(
-            name=name,
-            cost_per_day=cost_per_day,
-            error_rate=error_rate,
-            throughput=throughput,
-            management_quality=management_quality,
-            development_quality=development_quality,
-            signing_bonus=signing_bonus
-        )
-        created_skill_types.append(skill_type)
-
-    return created_skill_types
+    return retrieve_skill_types_from_json()
 
 
-def init_members(skill_types: List):
-    members = []
+def init_members(skill_types: List[SkillType]) -> List[Member]:
+    members: List[Member] = []
 
-    if SKILL_TYPE_ID > len(skill_types):
-        raise ValueError("SKILL_TYPE_ID index out of list range.")
+    # If the skill types are generated randomly, we are sure
+    # the the list contains exactly 3 skill types
+    # so we dont have to choose between them.
+    if IS_RANDOM_SKILL_TYPE:
+        for sk in skill_types:
+            for _ in range(NUMBER_OF_SK_PER_TEAM):
+                members.append(Member.objects.create(skill_type=sk, team_id=1))
+        return members
 
-    sk = skill_types[SKILL_TYPE_ID]
+    if IS_RANDOM_SKILL_TYPE_IDS:
+        [skill_type_ids.append(randint(0, len(skill_types) - 1))
+         for _ in range(3)]
 
-    for _ in range(NUMBER_OF_SK_PER_TEAM):
-        members.append(Member.objects.create(skill_type=sk, team_id=1))
+    else:
+        [skill_type_ids.append(x) for x in SKILL_TYPE_IDS]
+
+        if len(skill_type_ids) > len(skill_types):
+            raise ValueError(
+                "Number of ids is bigger than the list of skilltypes.")
+
+        for id in skill_type_ids:
+            if id > len(skill_types) - 1:
+                raise ValueError(f"Id {id} is out of bound.")
+
+    for id in skill_type_ids:
+        sk = skill_types[id]
+        for _ in range(NUMBER_OF_SK_PER_TEAM):
+            members.append(Member.objects.create(skill_type=sk, team_id=1))
 
     return members
 
@@ -244,19 +287,31 @@ def run_simulation(scenario, config, members, tasks, skill_types, rec, UP, UP_n)
     rec.add(s, config, skill_types, UP, UP_n)
 
 
-def set_config(config: ScenarioConfig):
-    scenario_config = retrieve_scenario_config_from_json()
+def generate_random_scneario_config() -> ScenarioConfig:
+    ScenarioConfig.objects.all().delete()
+    config: ScenarioConfig = ScenarioConfig.objects.create()
 
-    config.stress_weekend_reduction = scenario_config.stress_weekend_reduction
-    config.stress_overtime_increase = scenario_config.stress_overtime_increase
-    config.stress_error_increase = scenario_config.stress_error_increase
-    config.done_tasks_per_meeting = scenario_config.done_tasks_per_meeting
-    config.train_skill_increase_rate = scenario_config.train_skill_increase_rate
-    config.cost_member_team_event = scenario_config.cost_member_team_event
-    config.randomness = scenario_config.randomness
+    config.id = 1
+    config.name = f"random_config_{randint(10000000,99999999)}"
+    config.stress_weekend_reduction = round(random.random() * 0.8, 2)
+    config.stress_overtime_increase = round(random.random() * 0.25, 2)
+    config.stress_error_increase = round(random.random() * 0.33, 2)
+    config.done_tasks_per_meeting = randint(0, 5) * 20
+    config.train_skill_increase_rate = round(random.random() * 0.5, 2)
+
+    config.save()
+
+    return config
 
 
-def set_tasks(u):
+def set_config() -> ScenarioConfig:
+    if IS_RANDOM_HYPERPARAMS:
+        return generate_random_scneario_config()
+
+    return retrieve_scenario_config_from_json()
+
+
+def reset_tasks(u):
     TOTAL = 200
     tasks = set()
     for _ in range(int(TOTAL * 0.25)):
@@ -286,13 +341,28 @@ def np_record(
             config.done_tasks_per_meeting,
             config.train_skill_increase_rate,
             len(s.members),
-            skill_types[SKILL_TYPE_ID].name,
-            skill_types[SKILL_TYPE_ID].throughput,
-            skill_types[SKILL_TYPE_ID].error_rate,
-            skill_types[SKILL_TYPE_ID].cost_per_day,
-            skill_types[SKILL_TYPE_ID].management_quality,
-            skill_types[SKILL_TYPE_ID].development_quality,
-            skill_types[SKILL_TYPE_ID].signing_bonus,
+            NUMBER_OF_SK_PER_TEAM,
+            skill_types[skill_type_ids[0]].name,
+            skill_types[skill_type_ids[0]].throughput,
+            skill_types[skill_type_ids[0]].error_rate,
+            skill_types[skill_type_ids[0]].cost_per_day,
+            skill_types[skill_type_ids[0]].management_quality,
+            skill_types[skill_type_ids[0]].development_quality,
+            skill_types[skill_type_ids[0]].signing_bonus,
+            skill_types[skill_type_ids[1]].name,
+            skill_types[skill_type_ids[1]].throughput,
+            skill_types[skill_type_ids[1]].error_rate,
+            skill_types[skill_type_ids[1]].cost_per_day,
+            skill_types[skill_type_ids[1]].management_quality,
+            skill_types[skill_type_ids[1]].development_quality,
+            skill_types[skill_type_ids[1]].signing_bonus,
+            skill_types[skill_type_ids[2]].name,
+            skill_types[skill_type_ids[2]].throughput,
+            skill_types[skill_type_ids[2]].error_rate,
+            skill_types[skill_type_ids[2]].cost_per_day,
+            skill_types[skill_type_ids[2]].management_quality,
+            skill_types[skill_type_ids[2]].development_quality,
+            skill_types[skill_type_ids[2]].signing_bonus,
             UP_n,
             workpack.days,
             workpack.bugfix,
@@ -312,6 +382,10 @@ def np_record(
             mean([m.motivation for m in s.members]),
             len(s.tasks.accepted()),
             len(s.tasks.rejected()),
+            IS_RANDOM_HYPERPARAMS,
+            IS_RANDOM_USERPARAMS,
+            IS_RANDOM_SKILL_TYPE,
+            IS_RANDOM_SKILL_TYPE_IDS
         ]
     )
 
@@ -338,14 +412,29 @@ class NpRecord:
                 "c_sei",
                 "c_dtm",
                 "c_tsi",
-                "s_number_of_sk",
-                "s_name",
-                "s_throughput",
-                "s_error_rate",
-                "s_cost_per_day",
-                "s_management_quality",
-                "s_development_quality",
-                "s_signing_bonus",
+                "s_team_size",
+                "s_number_of_sk_per_team",
+                "s_1name",
+                "s_1throughput",
+                "s_1error_rate",
+                "s_1cost_per_day",
+                "s_1management_quality",
+                "s_1development_quality",
+                "s_1signing_bonus",
+                "s_2name",
+                "s_2throughput",
+                "s_2error_rate",
+                "s_2cost_per_day",
+                "s_2management_quality",
+                "s_2development_quality",
+                "s_2signing_bonus",
+                "s_3name",
+                "s_3throughput",
+                "s_3error_rate",
+                "s_3cost_per_day",
+                "s_3management_quality",
+                "s_3development_quality",
+                "s_3signing_bonus",
                 "UP",
                 "days",
                 "bugfix",
@@ -365,11 +454,15 @@ class NpRecord:
                 "Mot",
                 "Acc",
                 "Rej",
+                "IS_RANDOM_HYPERPARAMS",
+                "IS_RANDOM_USERPARAMS",
+                "IS_RANDOM_SKILL_TYPE",
+                "IS_RANDOM_SKILL_TYPE_IDS"
             ],
         )
 
 
-def set_members(members: List[Member]):
+def reset_members(members: List[Member]):
     for member in members:
         member.familiar_tasks = 0
         member.familiarity = 0
@@ -378,7 +471,7 @@ def set_members(members: List[Member]):
         member.xp = 0
 
 
-def set_scenario(scenario: UserScenario, state: ScenarioState):
+def reset_scenario(scenario: UserScenario, state: ScenarioState):
     state.cost = 0
     state.day = 0
 
@@ -393,7 +486,7 @@ def random_number(start: int, end: int) -> int:
         end = start
         start = tmp
 
-    return random.randint(start, end)
+    return randint(start, end)
 
 
 def generate_user_params() -> Workpack:
@@ -404,37 +497,43 @@ def generate_user_params() -> Workpack:
     wp.integrationtest = random_boolean()
     wp.unittest = random_boolean()
     wp.meetings = random_number(0, 5)
-    wp.training = random_number(0, 5)
+    wp.training = random_number(0, 3)
     wp.salary = random_number(0, 2)
     wp.overtime = random_number(-1, 2)
 
     return wp
 
 
+def set_user_params() -> List[Workpack]:
+    if IS_RANDOM_USERPARAMS:
+        return [generate_user_params() for _ in range(8)]
+
+    return USERPARAMETERS
+
+
 def main():
+    check_file_exists("settings.env")
+    validate_settings_file("settings.env")
     print("Started")
     rec = NpRecord()
     scenario, state, team = init_scenario()
-    config = init_config()
     skill_types = init_skill_types()
     members = init_members(skill_types)
 
     for x in range(1, NRUNS + 1):
-        set_config(config)
-        user_params: List = [generate_user_params() for _ in range(8)]
+        config: ScenarioConfig = set_config()
+        user_params: List = set_user_params()
 
         for n, UP in enumerate(user_params):
-            set_scenario(scenario, state)
-            set_members(members)
-            tasks = set_tasks(scenario)
+            reset_scenario(scenario, state)
+            reset_members(members)
+            tasks = reset_tasks(scenario)
             run_simulation(scenario, config, members,
                            tasks, skill_types, rec, UP, n)
-            # print(f"{len(tasks.done())} \t {mean([m.efficiency for m in members])}")
 
         if x % SAVE_EVERY == 0:
             print(f"{x} of {NRUNS}")
             if USE_S3:
-                print("Saving in S3")
                 csv_buffer = StringIO()
                 rec.df().to_csv(csv_buffer)
                 s3_resource = boto3.resource("s3")
