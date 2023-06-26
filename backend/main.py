@@ -12,11 +12,11 @@ from pandas import DataFrame
 import numpy as np
 from typing import List
 from statistics import mean
-from random import randint
+from random import randint, random
 import os
 from dotenv import load_dotenv
 import json
-import random
+
 
 print("MAIN SCRIPT")
 
@@ -241,8 +241,10 @@ def init_skill_types() -> List[SkillType]:
     SkillType.objects.all().delete()
 
     if IS_RANDOM_SKILL_TYPE:
+        print("RANDOM SKILL TYPES")
         return [generate_random_skilltype() for _ in range(3)]
 
+    print("GIVEN SKILL TYPES")
     return retrieve_skill_types_from_json()
 
 
@@ -258,15 +260,17 @@ def init_members(skill_types: List[SkillType]) -> List[Member]:
     skilltype_ids: set[int] = None
 
     if IS_RANDOM_SKILL_TYPE_IDS:
+        print("RANDOM SKILL TYPE IDS")
         skilltype_ids = set([randint(len(skill_types)) for _ in range(3)])
     else:
+        print("GIVEN SKILL TYPE IDS")
         skilltype_ids = set(SKILL_TYPE_IDS)
 
     if len(skilltype_ids) > len(skill_types):
         raise ValueError(
             "Number of ids is larger than the list of skilltypes.")
 
-    for id in SKILL_TYPE_IDS:
+    for id in skilltype_ids:
         sk = skill_types[id]
         for _ in range(NUMBER_OF_SK_PER_TEAM):
             members.append(Member.objects.create(skill_type=sk, team_id=1))
@@ -282,9 +286,11 @@ def run_simulation(scenario, config, members, tasks, skill_types, rec, UP, UP_n)
     rec.add(s, config, skill_types, UP, UP_n)
 
 
-def generate_random_scneario_config():
-    config: ScenarioConfig = ScenarioConfig()
+def generate_random_scneario_config() -> ScenarioConfig:
+    ScenarioConfig.objects.all().delete()
+    config: ScenarioConfig = ScenarioConfig.objects.create()
 
+    config.id = 1
     config.name = f"random_config_{randint(10000000,99999999)}"
     config.stress_weekend_reduction = round(random() * 0.8, 2)
     config.stress_overtime_increase = round(random() * 0.25, 2)
@@ -292,11 +298,17 @@ def generate_random_scneario_config():
     config.done_tasks_per_meeting = randint(0, 5) * 20
     config.train_skill_increase_rate = round(random() * 0.5, 2)
 
+    config.save()
+
+    return config
+
 
 def set_config() -> ScenarioConfig:
     if IS_RANDOM_HYPERPARAMS:
+        print("RANDOM CONFIG")
         return generate_random_scneario_config()
 
+    print("GIVEN CONFIG")
     return retrieve_scenario_config_from_json()
 
 
@@ -495,8 +507,10 @@ def generate_user_params() -> Workpack:
 
 def set_user_params() -> List[Workpack]:
     if IS_RANDOM_USERPARAMS:
+        print("RANDOM USER PARAMS")
         return [generate_user_params() for _ in range(8)]
 
+    print("GIVEN USER PARAMS")
     return USERPARAMETERS
 
 
