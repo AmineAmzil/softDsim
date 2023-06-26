@@ -12,7 +12,8 @@ from pandas import DataFrame
 import numpy as np
 from typing import List
 from statistics import mean
-from random import randint, random
+import random
+from random import randint
 import os
 from dotenv import load_dotenv
 import json
@@ -228,7 +229,7 @@ def generate_random_skilltype() -> SkillType:
 
     sk.name = f"random_{randint(10000000,99999999)}"
     sk.throughput = randint(1, 5)
-    sk.error_rate = round(random() * 0.23 + 0.1, 2)
+    sk.error_rate = round(random.random() * 0.23 + 0.1, 2)
     sk.cost_per_day = randint(100, 300)
     sk.development_quality = randint(5, 100)
     sk.management_quality = randint(5, 100)
@@ -261,7 +262,8 @@ def init_members(skill_types: List[SkillType]) -> List[Member]:
 
     if IS_RANDOM_SKILL_TYPE_IDS:
         print("RANDOM SKILL TYPE IDS")
-        skilltype_ids = set([randint(len(skill_types)) for _ in range(3)])
+        skilltype_ids = set([randint(len(skill_types))
+                            for _ in range(3)])
     else:
         print("GIVEN SKILL TYPE IDS")
         skilltype_ids = set(SKILL_TYPE_IDS)
@@ -292,11 +294,11 @@ def generate_random_scneario_config() -> ScenarioConfig:
 
     config.id = 1
     config.name = f"random_config_{randint(10000000,99999999)}"
-    config.stress_weekend_reduction = round(random() * 0.8, 2)
-    config.stress_overtime_increase = round(random() * 0.25, 2)
-    config.stress_error_increase = round(random() * 0.33, 2)
+    config.stress_weekend_reduction = round(random.random() * 0.8, 2)
+    config.stress_overtime_increase = round(random.random() * 0.25, 2)
+    config.stress_error_increase = round(random.random() * 0.33, 2)
     config.done_tasks_per_meeting = randint(0, 5) * 20
-    config.train_skill_increase_rate = round(random() * 0.5, 2)
+    config.train_skill_increase_rate = round(random.random() * 0.5, 2)
 
     config.save()
 
@@ -487,7 +489,7 @@ def random_number(start: int, end: int) -> int:
         end = start
         start = tmp
 
-    return random.randint(start, end)
+    return randint(start, end)
 
 
 def generate_user_params() -> Workpack:
@@ -498,7 +500,7 @@ def generate_user_params() -> Workpack:
     wp.integrationtest = random_boolean()
     wp.unittest = random_boolean()
     wp.meetings = random_number(0, 5)
-    wp.training = random_number(0, 5)
+    wp.training = random_number(0, 3)
     wp.salary = random_number(0, 2)
     wp.overtime = random_number(-1, 2)
 
