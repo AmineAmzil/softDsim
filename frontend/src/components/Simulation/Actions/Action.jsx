@@ -1,4 +1,4 @@
-import { Flex, FormControl, Grid, Switch } from '@chakra-ui/react'
+import { Flex, FormControl, Grid, Switch, Tooltip } from '@chakra-ui/react'
 import React, { useState } from 'react'
 import ActionSlider from './ActionSlider'
 import ActionToggle from './ActionToggle'
@@ -7,7 +7,7 @@ import { actionIcon } from "../../ScenarionStudio/scenarioStudioData"
 import ActionElement from "./ActionElement";
 
 const Action = (props) => {
- const [activeTooltip, setActiveTooltip] = useState(null);
+const [activeTooltip, setActiveTooltip] = useState(null);
 
   const handleButtonClick = (tooltip) => {
     setActiveTooltip(tooltip);
@@ -18,16 +18,33 @@ const Action = (props) => {
                 {
                     // Bugfix
                     props.action.action === 'bugfix' ?
-                        <ActionElement title="Bugfixing" secondaryText="Start Bugfixing" icon={actionIcon.BUGFIX}  tooltip={"Fix known bugs. Bugs are discovered after unit testing"}>
-                         <button onClick={() => handleButtonClick('bugfix')}>?</button>
-                            <FormControl display="flex" justifyContent="end">
-                                <Switch onChange={(event) => props.onSelectAction({
-                                    type: props.action.action,
-                                    value: event.target.checked
-                                })} size='lg' defaultChecked={props.actionDefaultValues.bugfix} />
-                            </FormControl>
-                        </ActionElement>
-                        :
+                        <ActionElement
+          title="Bugfixing"
+          secondaryText="Start Bugfixing"
+          icon={actionIcon.BUGFIX}
+        >
+          <Tooltip
+            label={"Fix known bugs. Bugs are discovered after unit testing"}
+            isOpen={activeTooltip === 'bugfix'}
+            onClose={() => setActiveTooltip(null)}
+          >
+            <button onClick={() => handleButtonClick('bugfix')}>Bugfix Tooltip</button>
+          </Tooltip>
+          <FormControl display="flex" justifyContent="end">
+            <Switch
+              onChange={(event) =>
+                props.onSelectAction({
+                  type: props.action.action,
+                  value: event.target.checked
+                })
+              }
+              size='lg'
+              defaultChecked={props.actionDefaultValues.bugfix}
+            />
+          </FormControl>
+        </ActionElement>
+
+                          :
                         // Unit Test
                         props.action.action === 'unittest' ?
                             <ActionElement title="Unit Testing" secondaryText="Start Unit Testing"
