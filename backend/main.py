@@ -535,7 +535,7 @@ def main():
             rest_tasks: set[Task] = run_simulation(
                 scenario, config, members, tasks, skill_types, rec, UP, n)
             tasks.tasks.clear()
-            tasks.tasks.union(rest_tasks)
+            tasks.tasks.update(rest_tasks)
 
         if x % SAVE_EVERY == 0:
             print(f"{x} of {NRUNS}")
