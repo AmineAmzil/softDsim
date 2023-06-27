@@ -35,17 +35,29 @@ import {
   FormHelperText,
   AlertDialogOverlay,
 } from "@chakra-ui/react";
-import { HiOutlineTrash } from "react-icons/hi";
+import { HiOutlineTrash, HiViewList } from "react-icons/hi";
 import { FormControl, FormLabel, Input } from "@chakra-ui/react";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 const SkilltypesOverview = () => {
   const [skilltypes, setSkilltypes] = useState([]);
+  const [skillType, setSkillType] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSkilltype, setSelectedSkilltype] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [isModal2Open, setIsModal2Open] = useState(false);
+
+
+    const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const { source, destination } = result;
+    const updatedSkillTypes = Array.from(skilltypes);
+    const [removed] = updatedSkillTypes.splice(source.index, 1);
+    updatedSkillTypes.splice(destination.index, 0, removed);
+    setSkilltypes(updatedSkillTypes);
+  };
 
   const closeModal2 = () => {
     setIsModal2Open(false);
@@ -349,22 +361,30 @@ const SkilltypesOverview = () => {
         {isLoading ? (
           <Spinner />
         ) : (
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>Name</Th>
-                <Th>Cost per Day</Th>
-                <Th>Error Rate</Th>
-                <Th>Throughput</Th>
-                <Th>Management Quality</Th>
-                <Th>Development Quality</Th>
-                <Th>Signing Bonus</Th>
-                <Th></Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {skilltypes.map((skillType) => (
-                <Tr key={skillType.id}>
+<Table>
+  <Thead>
+    <Tr>
+      <Th>Name</Th>
+      <Th>Cost per Day</Th>
+      <Th>Error Rate</Th>
+      <Th>Throughput</Th>
+      <Th>Management Quality</Th>
+      <Th>Development Quality</Th>
+      <Th>Signing Bonus</Th>
+      <Th></Th>
+    </Tr>
+  </Thead>
+  <DragDropContext onDragEnd={handleDragEnd}>
+    <Droppable droppableId="skilltypes">
+      {(provided) => (
+        <Tbody ref={provided.innerRef} {...provided.droppableProps}>
+          {skilltypes.map((skillType, index) => (
+            <Draggable key={skillType.id} draggableId={skillType.id} index={index}>
+              {(provided) => (
+                <Tr
+                  ref={provided.innerRef}
+                  {...provided.draggableProps}
+                >
                   <Td>{skillType.name}</Td>
                   <Td>{skillType.cost_per_day}</Td>
                   <Td>{skillType.error_rate}</Td>
@@ -395,10 +415,19 @@ const SkilltypesOverview = () => {
                       {/* ... */}
                     </Popover>
                   </Td>
+                  <Td {...provided.dragHandleProps}>
+                      <HiViewList/>
+                  </Td>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
+              )}
+            </Draggable>
+          ))}
+          {provided.placeholder}
+        </Tbody>
+      )}
+    </Droppable>
+  </DragDropContext>
+</Table>
         )}
       </Box>
 
