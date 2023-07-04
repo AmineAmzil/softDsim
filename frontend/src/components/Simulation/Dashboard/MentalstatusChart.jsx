@@ -140,7 +140,7 @@ const MentalstatusChart = ({ value, inverseColors, title }) => {
         <VStack spacing={5} alignItems="baseline">
           <Stat>
             <StatLabel color="gray.400">Stress</StatLabel>
-            <StatNumber>{value.team.stress.toFixed(2) * 100}%</StatNumber>
+            <StatNumber>{(value.team.stress * 100).toFixed(2)}%</StatNumber>
             <StatHelpText>
               <StatArrow type="increase" />
               {((series[0].data[series[0].data.length - 1] - series[0].data[series[0].data.length - 2]) || 0).toFixed(2)}% since last iteration
