@@ -279,12 +279,16 @@ def init_members(skill_types: List[SkillType]) -> List[Member]:
     return members
 
 
-def run_simulation(scenario, config, members, tasks, skill_types, rec, UP, UP_n):
+def run_simulation(scenario, config, members, tasks, skill_types, rec, UP, UP_n) -> set[Task]:
+    """
+    Returns the rejected Tasks
+    """
     scenario.config = config
     s = FastSecenario(scenario, members, tasks, 1, 1)
     r = SimulationRequest(scenario_id=0, type="SIMULATION", actions=UP)
     simulate(r, s)
     rec.add(s, config, skill_types, UP, UP_n)
+    return s.tasks.rejected()
 
 
 def generate_random_scneario_config() -> ScenarioConfig:
@@ -311,7 +315,7 @@ def set_config() -> ScenarioConfig:
     return retrieve_scenario_config_from_json()
 
 
-def reset_tasks(u):
+def reset_fast_tasks(u) -> FastTasks:
     TOTAL = 200
     tasks = set()
     for _ in range(int(TOTAL * 0.25)):
@@ -523,13 +527,15 @@ def main():
     for x in range(1, NRUNS + 1):
         config: ScenarioConfig = set_config()
         user_params: List = set_user_params()
+        reset_scenario(scenario, state)
+        reset_members(members)
+        tasks: FastTasks = reset_fast_tasks(scenario)
 
         for n, UP in enumerate(user_params):
-            reset_scenario(scenario, state)
-            reset_members(members)
-            tasks = reset_tasks(scenario)
-            run_simulation(scenario, config, members,
-                           tasks, skill_types, rec, UP, n)
+            rest_tasks: set[Task] = run_simulation(
+                scenario, config, members, tasks, skill_types, rec, UP, n)
+            tasks.tasks.clear()
+            tasks.tasks.update(rest_tasks)
 
         if x % SAVE_EVERY == 0:
             print(f"{x} of {NRUNS}")
