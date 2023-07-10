@@ -143,33 +143,20 @@ const SkilltypeContainer = ({
                           <br />
                           <strong>Error rate:</strong> {skillTypeObj.error_rate}
                           <br />
-                          <strong>Throughput:</strong> {skillTypeObj.throughput}
-                          <br />
                           <strong>Management quality:</strong> {skillTypeObj.management_quality}
                           <br />
                           <strong>Development quality:</strong> {skillTypeObj.development_quality}
                           <br />
 
-                          {extraInfo && (
+                          {extraInfo && extraInfo.min_throughput !== 0 && extraInfo.max_throughput !== 0 && (
                               <>
-                                <strong>Description:</strong> {extraInfo.description}
-                                <br />
-                                <strong>Weekly Tasks:</strong> {extraInfo && `[${extraInfo.min_weekly_tasks} ~ ${extraInfo.max_weekly_tasks}]`}
-                                <br />
-                                <strong>Avg Weekly Tasks:</strong> {extraInfo.avg_weekly_tasks}
-                                <br />
-                                <strong>Standard Deviation Weekly Tasks:</strong>{" "}
-                                {extraInfo.standard_deviation_weekly_tasks}
-                                <br />
-                                <strong>Cost per Task:</strong> ${extraInfo.cost_per_task}
+                                <strong>Throughput per Day:</strong> [{extraInfo.min_throughput} ~ {extraInfo.max_throughput}]
                                 <br />
                               </>
                           )}
 
                           {!extraInfo && (
                               <>
-                                <strong>No Extra Info Available</strong>
-                                <br />
                               </>
                           )}
                         </div>

@@ -54,6 +54,8 @@ const SkilltypesOverview = () => {
     avg_weekly_tasks: 0,
     standard_deviation_weekly_tasks: 0,
     cost_per_task: 0,
+    min_throughput:0,
+    max_throughput: 0,
   });
 
   const closeModal2 = () => {
@@ -83,6 +85,8 @@ const SkilltypesOverview = () => {
           avg_weekly_tasks: 0,
           standard_deviation_weekly_tasks: 0,
           cost_per_task: 0,
+          min_throughput:0,
+          max_throughput: 0,
         });
         setIsEditExtraInfoOpen(true);
       } else {
@@ -1015,6 +1019,42 @@ const SkilltypesOverview = () => {
                       setEditedExtraInfo({
                         ...editedExtraInfo,
                         cost_per_task: parseFloat(e.target.value),
+                      })
+                  }
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel style={{ marginBottom: "1px" }}>
+                Minimum Throughput</FormLabel>
+              <FormHelperText style={{ marginTop: "1px" }}>
+                Please enter a positive number.
+              </FormHelperText>
+              <Input
+                  type="number"
+                  name="min_throughput"
+                  value={editedExtraInfo.min_throughput}
+                  onChange={(e) =>
+                      setEditedExtraInfo({
+                        ...editedExtraInfo,
+                        min_throughput: parseFloat(e.target.value),
+                      })
+                  }
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel style={{ marginBottom: "1px" }}>
+                Maximum Throughput</FormLabel>
+              <FormHelperText style={{ marginTop: "1px" }}>
+                Please enter a positive number.
+              </FormHelperText>
+              <Input
+                  type="number"
+                  name="max_throughput"
+                  value={editedExtraInfo.max_throughput}
+                  onChange={(e) =>
+                      setEditedExtraInfo({
+                        ...editedExtraInfo,
+                        max_throughput: parseFloat(e.target.value),
                       })
                   }
               />

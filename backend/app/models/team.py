@@ -260,7 +260,10 @@ class SkillTypeInfo(models.Model):
         validators=[MinValueValidator(0.0)], default=0)
     cost_per_task = models.FloatField(
         validators=[MinValueValidator(0.0)], default=0)
-
+    min_throughput = models.FloatField(
+            validators=[MinValueValidator(0.0)], default=0)
+    max_throughput = models.FloatField(
+            validators=[MinValueValidator(0.0)], default=0)
     def __str__(self):
         return self.name
 
