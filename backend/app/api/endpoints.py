@@ -16,18 +16,20 @@ from app.api.views.simulation import (
     StartUserScenarioView,
     NextStepView,
 )
-from app.api.views.team import SkillTypeView, TeamViews, MemberView
+from app.api.views.team import SkillTypeView, TeamViews, MemberView, SkillTypeInfoView
 # all request with /api/ land here (see softDsim/urls.py)
 from app.api.views.template_scenario import (
     TemplateScenarioUserListView,
     TemplateScenarioView,
     StudioTemplateScenarioView,
-    TemplateScenarioFromStudioView, StudioTemplateScenarioIsPublishedValidatorView
+    TemplateScenarioFromStudioView, StudioTemplateScenarioIsPublishedValidatorView, ScenarioCoursesView
 )
 from app.api.views.user import UserView
 # from app.api.views.sim_api import ParameterSimulation
 from app.api.views.user_scenario import UserScenarioViews
 from history.view import HistoryView, ResultView, ResultsView
+from app.api.views.course import CourseView, CourseUserView, CourseScenarioView, UserCoursesView
+from app.api.views.score_card import ScoreCardView
 
 urlpatterns = [
     # User stuff
@@ -41,6 +43,9 @@ urlpatterns = [
     # template scenario
     path("template-scenario", TemplateScenarioView.as_view()),
     path("template-scenario/<int:scenario_id>", TemplateScenarioView.as_view()),
+    # Score Card
+    path("template-scenario/<int:scenario_id>/score-card",
+         ScoreCardView.as_view()),
     path("template-overview", TemplateScenarioUserListView.as_view()),
     path("template-overview/<int:scenario_id>",
          TemplateScenarioUserListView.as_view()),
@@ -72,6 +77,8 @@ urlpatterns = [
     path("member/<int:id>", MemberView.as_view()),
     path("skill-type", SkillTypeView.as_view()),
     path("skill-type/<int:id>", SkillTypeView.as_view()),
+    path("skill-type/<int:skilltype_id>/info", SkillTypeInfoView.as_view()),
+
     # scenario config
     path("scenario-config", ScenarioConfigView.as_view()),
     path("scenario-config/<str:id>", ScenarioConfigView.as_view()),
@@ -86,4 +93,21 @@ urlpatterns = [
     path("result/<int:id>", ResultView.as_view()),
     path("results", ResultsView.as_view()),
     # path("sim/param", ParameterSimulation.as_view()),
+
+    # Course
+    path('courses', CourseView.as_view()),
+    path('courses/<int:id>', CourseView.as_view()),
+    # COURSE_USER
+    path('courses/<int:course_id>/users',
+         CourseUserView.as_view(), name='course-users'),
+    # COURSE_SCENARIO
+    path('courses/<int:course_id>/scenarios',
+         CourseScenarioView.as_view(), name='course-scenarios'),
+
+    ##
+    path('courses/user-scenarios', UserCoursesView.as_view(), name='course-detail'),
+
+    path("template-scenario/<int:scenario_id>/courses", ScenarioCoursesView.as_view())
+
+
 ]

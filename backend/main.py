@@ -1,6 +1,8 @@
-import boto3
-from io import StringIO
-from userparameter.set1 import USERPARAMETERS
+import json
+from dotenv import load_dotenv
+import os
+from random import randint
+import random
 from simulation_framework.wrappers import FastSecenario, FastTasks
 from app.dto.request import SimulationRequest, Workpack
 from app.src.simulation import simulate
@@ -12,21 +14,15 @@ from pandas import DataFrame
 import numpy as np
 from typing import List
 from statistics import mean
-import random
-from random import randint
-import os
-from dotenv import load_dotenv
-import json
+from random import randint, random
+print("MAIN SCRIPT")
 
 
 print("MAIN SCRIPT")
 
 skill_type_ids: List[int] = []
 
-
-def check_file_exists(file_path):
-    if not os.path.isfile(file_path):
-        raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+bucket = "softdsim"
 
 
 def check_skilltype_ids(text: str) -> bool:

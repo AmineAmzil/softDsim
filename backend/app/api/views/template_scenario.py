@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from app.decorators.decorators import allowed_roles
+from app.decorators.decorators import allowed_roles, has_access_to_scenario
 from app.exceptions import IndexException
 from app.models.action import Action
 from app.models.answer import Answer
@@ -24,19 +24,22 @@ from app.serializers.template_scenario import (
     ReducedTemplateScenarioSerializer,
     TemplateScenarioSerializer,
 )
+from app.serializers.course import (
+    CourseNameSerializer,
+)
 from config import get_config
 from history.models.result import Result
 from app.models.event import Event
 from app.models.event import EventEffect
+from app.models.course import Course
 
 
 class TemplateScenarioView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @allowed_roles(["student", "creator", "staff"])
+    @allowed_roles(["creator", "staff"])
     def get(self, request, scenario_id=None, format=None):
-
         try:
             if scenario_id:
                 template_scenario = TemplateScenario.objects.get(
@@ -101,10 +104,10 @@ class TemplateScenarioView(APIView):
 
     @allowed_roles(["creator", "staff"])
     def delete(self, request, scenario_id=None):
-
         try:
             template_scenario = get_object_or_404(
                 TemplateScenario, id=scenario_id)
+
             serializer = TemplateScenarioSerializer(template_scenario)
             template_scenario.delete()
 
@@ -117,7 +120,7 @@ class TemplateScenarioView(APIView):
 
         except Exception as e:
             logging.error(
-                f"{e.__class__.__name__} occurred in DELETE template-scenario with id {id}"
+                f"{e.__class__.__name__} occurred in DELETE template-scenario with id {scenario_id}"
             )
             return Response(
                 {"status": "something went wrong internally"},
@@ -514,17 +517,18 @@ def handle_model(data, scenario: TemplateScenario, i):
     m = ModelSelection(
         index=i,
         text=data.get("text", ""),
-        waterfall="waterfall" in data.get("models"),
-        kanban="kanban" in data.get("models"),
-        scrum="scrum" in data.get("models"),
+        waterfall="Waterfall" in data.get("models"),
+        kanban="Kanban" in data.get("models"),
+        scrum="Scrum" in data.get("models"),
         template_scenario=scenario,
     )
 
-    if not m.waterfall and not m.kanban and not m.scrum:
-        # If no model is selected, select all models
-        m.waterfall = True
-        m.scrum = True
-        m.kanban = True
+    # We have a minimum requirement. That's why this isn't Necessar (Burak)
+    # if not m.waterfall and not m.kanban and not m.scrum:
+    # If no model is selected, select all models
+    # m.waterfall = True
+    # m.scrum = True
+    # m.kanban = True
 
     m.save()
     return i + 1
@@ -535,7 +539,7 @@ def handle_event(data, scenario: TemplateScenario, i):
     event = Event()
 
     event.template_scenario = scenario
-    event.text = data['displayName']
+    event.text = data['text']
     event.trigger_type = data['trigger_type']
     event.trigger_comparator = data['trigger_comparator']
 
@@ -658,9 +662,9 @@ class TemplateScenarioUserListView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @allowed_roles(["student"])
+    @allowed_roles(["all"])
+    @has_access_to_scenario("scenario_id", False)
     def get(self, request, scenario_id=None, format=None):
-
         try:
             if scenario_id:
                 data = self.get_data_for_single_scenario(
@@ -669,6 +673,7 @@ class TemplateScenarioUserListView(APIView):
                 return Response(data, status=status.HTTP_200_OK)
 
             template_scenarios = TemplateScenario.objects.all()
+
             data = [
                 self.get_data_for_single_scenario(
                     scenario.id, request.user.username)
@@ -701,3 +706,50 @@ class TemplateScenarioUserListView(APIView):
         if tries:
             max_score = max(map(lambda x: x.total_score, results))
         return {**serializer.data, "tries": tries, "max_score": max_score}
+
+
+class ScenarioCoursesView(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    @allowed_roles(["staff"])
+    def get(self, request, scenario_id):
+        """
+        Get all the courses where a scenario is associated.
+        """
+        courses = Course.objects.filter(scenarios__id=scenario_id)
+        serializer = CourseNameSerializer(courses, many=True)
+        response_data = [{
+            "id": course.id,
+            "name": course.name
+        } for course in courses]
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+
+    @allowed_roles(["staff"])
+    def delete(self, request, scenario_id):
+         """
+         Remove a scenario from all the associated courses.
+         """
+         try:
+            scenario_id = int(scenario_id)
+            if scenario_id < 1:
+                raise ValueError(f"Invalid scenario ID: {scenario_id}")
+         except ValueError as e:
+             return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+             )
+
+         scenario = get_object_or_404(TemplateScenario, id=scenario_id)
+         courses = Course.objects.filter(scenarios__id=scenario_id)
+
+         for course in courses:
+            course.scenarios.remove(scenario)
+
+         return Response(
+            {"status": f"Scenario {scenario_id} removed from all associated courses."},
+            status=status.HTTP_200_OK
+         )
